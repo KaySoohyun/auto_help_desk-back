@@ -65,7 +65,7 @@ TICKET_TEMPLATES = [
         "description": "Me llegó la factura con un monto mayor al plan contratado. Quisiera saber a qué corresponde el adicional.",
         "category": "billing",
         "priority": "medium",
-        "status": "pending",
+        "status": "on_hold",
         "customer": True,
         "assigned": False,
         "messages": [
@@ -78,7 +78,7 @@ TICKET_TEMPLATES = [
         "description": "No recibo los correos de alerta ni las notificaciones push de la app desde la última actualización.",
         "category": "technical",
         "priority": "medium",
-        "status": "waiting_customer",
+        "status": "on_hold",
         "customer": False,
         "assigned": True,
         "messages": [],
@@ -100,7 +100,7 @@ TICKET_TEMPLATES = [
         "description": "Quiero saber si el plan actual permite agregar más usuarios y qué costo tendría el upgrade.",
         "category": "general",
         "priority": "low",
-        "status": "solved",
+        "status": "closed",
         "customer": True,
         "assigned": False,
         "messages": [
