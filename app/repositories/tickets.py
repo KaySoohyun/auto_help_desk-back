@@ -4,11 +4,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.crypto import InvalidCipherValue, decrypt_field, encrypt_field
+from app.models.tag import Tag, TicketTag
 from app.models.ticket import Ticket, TicketMessage
 from app.repositories.base import TenantScopedRepository
 
@@ -163,6 +164,7 @@ class TicketRepository(TenantScopedRepository[Ticket]):
         customer_id: int | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
+        q: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> tuple[list[TicketSummaryView], int]:
@@ -181,6 +183,15 @@ class TicketRepository(TenantScopedRepository[Ticket]):
             filters.append(Ticket.created_at >= date_from)
         if date_to:
             filters.append(Ticket.created_at <= date_to)
+        if q:
+            pattern = f"%{q}%"
+            has_tag = exists(
+                select(TicketTag.id).join(Tag, Tag.id == TicketTag.tag_id).where(
+                    TicketTag.ticket_id == Ticket.id,
+                    Tag.name.ilike(pattern),
+                )
+            )
+            filters.append(or_(Ticket.category.ilike(pattern), has_tag))
 
         stmt = (
             select(Ticket, func.count().over().label("_total"))

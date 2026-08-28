@@ -94,6 +94,7 @@ def list_my_tickets(
     status_filter: str | None = Query(default=None, alias="status", pattern="^(open|in_progress|on_hold|closed)$"),
     category: str | None = Query(default=None, max_length=100),
     priority: str | None = Query(default=None, pattern="^(low|medium|high|urgent)$"),
+    q: str | None = Query(default=None, max_length=100),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> TicketListOut:
@@ -104,6 +105,7 @@ def list_my_tickets(
         status=status_filter,
         category=category,
         priority=priority,
+        q=q,
         limit=limit,
         offset=offset,
     )

@@ -152,3 +152,37 @@ def test_customer_message_on_closed_ticket_422(client: TestClient) -> None:
         headers=_headers(tokens),
     )
     assert resp.status_code == 422
+
+
+# === Búsqueda por categoría/tags (feature 023) ===
+
+
+def test_customer_search_by_category(client: TestClient) -> None:
+    tokens = _register_customer(client, "cBusq@example.com")
+
+    def post(subject: str, category: str) -> None:
+        resp = client.post(
+            "/v1/me/tickets",
+            json={"subject": subject, "description": "desc", "category": category, "priority": "high"},
+            headers=_headers(tokens),
+        )
+        assert resp.status_code == 201, resp.text
+
+    post("ticket a", "busq-cliente-soporte")
+    post("ticket b", "busq-cliente-otro")
+
+    resp = client.get("/v1/me/tickets", params={"q": "soporte"}, headers=_headers(tokens))
+    assert resp.status_code == 200
+    subjects = {t["subject"] for t in resp.json()["items"]}
+    assert "ticket a" in subjects
+    assert "ticket b" not in subjects
+
+
+def test_customer_search_no_results(client: TestClient) -> None:
+    tokens = _register_customer(client, "cBusq2@example.com")
+    _create_ticket(client, tokens, "ticket base")
+    resp = client.get("/v1/me/tickets", params={"q": "no-existe-abc"}, headers=_headers(tokens))
+    body = resp.json()
+    assert body["total"] == 0
+    assert body["items"] == []
+

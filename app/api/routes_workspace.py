@@ -96,6 +96,7 @@ def my_tickets(
     tenant_ids: list[str] = Depends(get_effective_tenant_ids),
     db: Session = Depends(get_db),
     status_filter: str | None = Query(default=None, alias="status", pattern="^(open|in_progress|on_hold|closed)$"),
+    q: str | None = Query(default=None, max_length=100),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> TicketListOut:
@@ -104,6 +105,7 @@ def my_tickets(
     items, total = repo.list(
         assignee_id=current_user.id,
         status=status_filter,
+        q=q,
         limit=limit,
         offset=offset,
     )

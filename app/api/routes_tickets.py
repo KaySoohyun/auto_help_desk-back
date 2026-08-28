@@ -115,6 +115,7 @@ def list_tickets(
     assignee_id: int | None = Query(default=None),
     date_from: datetime | None = Query(default=None),
     date_to: datetime | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=100),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
 ) -> TicketListOut:
@@ -126,6 +127,7 @@ def list_tickets(
         assignee_id=assignee_id,
         date_from=date_from,
         date_to=date_to,
+        q=q,
         limit=limit,
         offset=offset,
     )

@@ -3,6 +3,7 @@ from tests.conftest import register_login
 
 from app.database import SessionLocal
 from app.models.audit import AuditEvent
+from app.models.tag import Tag, TicketTag
 from app.models.ticket import Ticket, TicketMessage
 
 
@@ -232,3 +233,89 @@ def test_ticket_operations_are_audited(client: TestClient) -> None:
         if e.action.startswith("ticket."):
             assert e.trace_id
             assert e.detail["ticket_id"] == created["id"]
+
+
+# === Búsqueda por categoría y tags (feature 023) ===
+
+
+def _create_tag_from_db(tenant_id: str, name: str) -> int:
+    with SessionLocal() as db:
+        tag = Tag(tenant_id=tenant_id, name=name)
+        db.add(tag)
+        db.commit()
+        db.refresh(tag)
+        return tag.id
+
+
+def _tag_ticket(client: TestClient, tokens: dict, ticket_id: int, tag_id: int) -> None:
+    resp = client.post(f"/v1/tickets/{ticket_id}/tags", json={"tag_id": tag_id}, headers=_headers(tokens))
+    assert resp.status_code == 201, resp.text
+
+
+def test_search_tickets_by_category(client: TestClient) -> None:
+    tokens = register_login(client, "agent-search-1@example.com", "agent", "ten-a")
+    _create_ticket(client, tokens, subject="coincide", category="busqueda-certificacion")
+    _create_ticket(client, tokens, subject="no coincide", category="otra-cosa")
+
+    resp = client.get("/v1/tickets", params={"q": "certificacion"}, headers=_headers(tokens))
+    assert resp.status_code == 200
+    body = resp.json()
+    subjects = {t["subject"] for t in body["items"]}
+    assert "coincide" in subjects
+    assert "no coincide" not in subjects
+
+
+def test_search_tickets_by_category_case_insensitive(client: TestClient) -> None:
+    tokens = register_login(client, "agent-search-2@example.com", "agent", "ten-a")
+    _create_ticket(client, tokens, subject="mayus", category="FACTURACION-XYZ")
+
+    resp = client.get("/v1/tickets", params={"q": "facturacion-xyz"}, headers=_headers(tokens))
+    assert resp.status_code == 200
+    subjects = {t["subject"] for t in resp.json()["items"]}
+    assert "mayus" in subjects
+
+
+def test_search_tickets_by_tag(client: TestClient) -> None:
+    tokens = register_login(client, "agent-search-3@example.com", "agent", "ten-a")
+    with_tag = _create_ticket(client, tokens, subject="tiene-tag", category="general")
+    without_tag = _create_ticket(client, tokens, subject="sin-tag", category="general")
+
+    tag_id = _create_tag_from_db("ten-a", "etiqueta-unica-x")
+    _tag_ticket(client, tokens, with_tag["id"], tag_id)
+
+    resp = client.get("/v1/tickets", params={"q": "etiqueta-unica-x"}, headers=_headers(tokens))
+    assert resp.status_code == 200
+    ids = {t["id"] for t in resp.json()["items"]}
+    assert with_tag["id"] in ids
+    assert without_tag["id"] not in ids
+
+
+def test_search_tickets_no_results(client: TestClient) -> None:
+    tokens = register_login(client, "agent-search-4@example.com", "agent", "ten-a")
+    _create_ticket(client, tokens, subject="base", category="billing")
+
+    resp = client.get("/v1/tickets", params={"q": "texto-que-no-existe-999"}, headers=_headers(tokens))
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 0
+    assert body["items"] == []
+
+
+def test_search_coexists_with_filters_and_pagination(client: TestClient) -> None:
+    tokens = register_login(client, "agent-search-5@example.com", "agent", "ten-a")
+    _create_ticket(client, tokens, subject="alto", category="busq-coexist-1", priority="high")
+    _create_ticket(client, tokens, subject="alto-2", category="busq-coexist-1", priority="high")
+    _create_ticket(client, tokens, subject="bajo", category="busq-coexist-1", priority="low")
+
+    resp = client.get(
+        "/v1/tickets",
+        params={"q": "busq-coexist-1", "priority": "high", "limit": 10, "offset": 0},
+        headers=_headers(tokens),
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    subjects = {t["subject"] for t in body["items"]}
+    assert "alto" in subjects
+    assert "alto-2" in subjects
+    assert "bajo" not in subjects
+
