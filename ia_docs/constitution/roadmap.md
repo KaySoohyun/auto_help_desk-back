@@ -4,6 +4,8 @@ _Orden y estado de las features. Es la vista de "qué hay hecho, qué toca ahora
 
 ## Hecho ✅
 
+23. **023 · Búsqueda por categorías y tags** — param `q` en `GET /v1/tickets`, `GET /v1/workspace/my-tickets` y `GET /v1/me/tickets` que filtra por `category.ilike` y tag (`Tag.name` vía subconsulta `EXISTS`), respetando paginado y `total`. Asunto/descripción quedan fuera por estar cifrados en reposo (política PII). Frontend (cliente y agente) envía `q` al backend con debounce y elimina el filtrado en cliente. `302 passed`.
+
 22. **022 · Seed de usuarios y tickets demo** — `scripts/seed_demo_users.py`: usuarios demo por rol con credenciales conocidas (`demo.agente/supervisor/admin/plataforma@example.com`, password `demo-pass-123`) con membresías en todos los tenants, `platform_admin` sin tenant, y un cliente demo por tenant (`demo.cliente.<slug>@example.com`) con su perfil en `customers`; tickets de ejemplo por empresa (cifrados, estados variados, algunos del cliente y asignados al agente). Idempotente y verificado contra FastAPI. `295 passed`.
 
 20. **020 · Portal de personas (rol customer)** — rol `customer` vinculado a tenant + permiso `persona:tickets`; registro público crea su perfil en `customers` (`customers.user_id`); endpoints `/v1/me` (perfil, mis tickets, crear, detalle, mensajes) con aislamiento por customer y tenant; sin LLM. `293 passed`.

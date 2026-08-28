@@ -2,6 +2,13 @@
 
 _Registro de cambios del proyecto. Formato: fecha · descripción · rama._
 
+## 2026-08-28 · Búsqueda por categorías y tags — feature 023
+
+- **Repositorio** `app/repositories/tickets.py`: `list()` acepta `q` (búsqueda de texto) y filtra con `or_` sobre `Ticket.category.ilike("%q%")` y una subconsulta `EXISTS` que matchea `Tag.name.ilike("%q%")` vía `ticket_tags`. Se mantiene el paginado (`limit`/`offset`) y el `total` sobre el mismo conjunto filtrado.
+- **Endpoints**: se agrega query param `q` (máx. 100) a `GET /v1/tickets` (`routes_tickets.py`), `GET /v1/workspace/my-tickets` (`routes_workspace.py`) y `GET /v1/me/tickets` (`routes_persona.py`).
+- **Alcance del filtro**: busca por **categoría** y **nombre de tags** (ambos en claro). Quedan fuera por estar cifrados en reposo: asunto (`subject`) y descripción (`description`) — política PII (ADR sobre cifrado). También fuera de alcance: email/usuario.
+- **Tests**: se agregaron casos en `tests/test_tickets.py` (por categoría, case-insensitive, por tag, sin resultados, coexistencia con filtros/paginación) y `tests/test_persona_portal.py` (por categoría y sin resultados en el portal del cliente). Suite backend: **302 passed**.
+
 ## 2026-08-18 · Seed de usuarios y tickets demo — feature 022
 
 - **`scripts/seed_demo_users.py`** (nuevo): crea usuarios demo con credenciales conocidas para la presentación del producto y tickets de ejemplo por tenant.
