@@ -2,6 +2,14 @@
 
 _Registro de cambios del proyecto. Formato: fecha · descripción · rama._
 
+## 2026-08-31 · Endpoints de tags (buscar y crear) — feature 017
+
+- **`app/api/routes_tags.py`** (nuevo router `tags`, prefijo `/v1/tags`):
+  - **`GET /v1/tags?search=`** — lista/busca tags del tenant por subcadena (`Tag.name.ilike("%search%")`, orden asc, tope 20). Requiere `tickets:read`.
+  - **`POST /v1/tags`** con `TagCreate` — crea una tag para el tenant efectivo del usuario; valida nombre no vacío, evita duplicados por tenant (409) y registra auditoría (`tag.created`). Requiere `responses:edit`.
+- **Registro**: router registrado en `app/main.py`.
+- **Tests**: suite backend **302 passed** (sin cambios de tests existentes).
+
 ## 2026-08-28 · Búsqueda por categorías y tags — feature 023
 
 - **Repositorio** `app/repositories/tickets.py`: `list()` acepta `q` (búsqueda de texto) y filtra con `or_` sobre `Ticket.category.ilike("%q%")` y una subconsulta `EXISTS` que matchea `Tag.name.ilike("%q%")` vía `ticket_tags`. Se mantiene el paginado (`limit`/`offset`) y el `total` sobre el mismo conjunto filtrado.

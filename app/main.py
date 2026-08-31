@@ -10,6 +10,7 @@ from app.api.routes_kb import router as kb_router
 from app.api.routes_metrics import router as metrics_router
 from app.api.routes_persona import router as persona_router
 from app.api.routes_pii import router as pii_router
+from app.api.routes_tags import router as tags_router
 from app.api.routes_tenants import router as tenants_router
 from app.api.routes_tickets import router as tickets_router
 from app.api.routes_workspace import router as workspace_router
@@ -32,6 +33,7 @@ app.include_router(metrics_router)
 app.include_router(ai_router)
 app.include_router(workspace_router)
 app.include_router(kb_router)
+app.include_router(tags_router)
 app.include_router(customers_router)
 app.include_router(persona_router)
 app.include_router(tenants_router)
