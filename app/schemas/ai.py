@@ -6,11 +6,8 @@ from pydantic import BaseModel
 
 class ClassificationOut(BaseModel):
     category: str
-    subcategory: str | None
-    intent: str
     suggested_priority: str
     confidence: float
-    rationale: str
     warnings: list[str] = []
     suggestion_id: int
     trace_id: str | None = None
@@ -45,6 +42,7 @@ class FeedbackIn(BaseModel):
     action: Literal["accepted", "edited", "rejected", "flagged"]
     reason: str | None = None
     edited_content_hash: str | None = None
+    edited_output: dict | None = None
 
 
 class FeedbackOut(BaseModel):

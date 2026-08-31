@@ -55,6 +55,7 @@ def record_feedback(
             action=payload.action,
             reason=payload.reason,
             edited_content_hash=payload.edited_content_hash,
+            edited_output=payload.edited_output,
             user_id=current_user.id,
             trace_id=trace_id,
         )

@@ -149,11 +149,8 @@ class MockLLMProvider:
             return json.dumps(
                 {
                     "category": "technical",
-                    "subcategory": "login",
-                    "intent": "incident",
                     "suggestedPriority": "high",
                     "confidence": 0.9,
-                    "rationale": "Falla reportada en autenticación (mock determinista).",
                     "warnings": [],
                 }
             )

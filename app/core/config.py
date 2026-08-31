@@ -43,7 +43,6 @@ class Settings(BaseSettings):
     ai_classify_categories: str = (
         "billing,technical,account,general,urgent,feedback,other"
     )
-    ai_classify_intents: str = "request,incident,question,complaint,other"
 
     ai_features_enabled: bool = True
 

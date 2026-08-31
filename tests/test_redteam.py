@@ -40,10 +40,8 @@ class CleanClassifyProvider:
     def complete(self, *, messages, model, max_tokens, temperature=0, task=None) -> LLMResponse:
         content = json.dumps({
             "category": "general",
-            "intent": "question",
             "suggestedPriority": "medium",
             "confidence": 0.9,
-            "rationale": "Clasificación limpia",
         })
         return LLMResponse(
             content=content,
@@ -117,7 +115,6 @@ def test_injection_payloads_do_not_execute_or_leak(
 
     body = resp.json()
     # La salida no repite la instrucción maliciosa ni filtra el payload
-    assert payload["description"] not in body.get("rationale", "")
     assert payload["description"] not in json.dumps(body)
 
     # La inyección queda auditada como alerta (no bloquea, pero se registra)

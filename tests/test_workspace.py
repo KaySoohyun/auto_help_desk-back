@@ -21,10 +21,8 @@ class WorkspaceMock(MockLLMProvider):
     def complete(self, **kwargs):
         content = json.dumps({
             "category": "general",
-            "intent": "question",
             "suggestedPriority": "medium",
             "confidence": 0.9,
-            "rationale": "Motivo",
         })
         return type("R", (), {
             "content": content,
@@ -118,7 +116,28 @@ def test_feedback_edited_stores_hash(client: TestClient, provider) -> None:
         assert sug.state == "edited"
 
 
-def test_feedback_rejected_and_flagged(client: TestClient, provider) -> None:
+def test_feedback_edited_persists_edited_output(client: TestClient, provider) -> None:
+    provider(WorkspaceMock())
+    tokens = register_login(client, "edito@example.com", "agent", "ten")
+    ticket = _create_ticket(client, tokens)
+    suggestion = _classify(client, tokens, ticket["id"])
+
+    resp = _feedback(
+        client,
+        tokens,
+        ticket["id"],
+        {
+            "suggestion_id": suggestion["suggestion_id"],
+            "action": "edited",
+            "edited_output": {"summary": "Resumen corregido por el agente."},
+        },
+    )
+    assert resp.status_code == 200, resp.text
+
+    with SessionLocal() as db:
+        sug = db.query(AISuggestion).filter(AISuggestion.id == suggestion["suggestion_id"]).one()
+        assert sug.state == "edited"
+        assert sug.output["summary"] == "Resumen corregido por el agente."
     provider(WorkspaceMock())
     tokens = register_login(client, "agent@example.com", "agent", "ten")
     ticket = _create_ticket(client, tokens)

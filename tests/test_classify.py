@@ -32,11 +32,8 @@ class ClassifyMock(MockLLMProvider):
             content = json.dumps(
                 {
                     "category": "technical",
-                    "subcategory": "login",
-                    "intent": "incident",
                     "suggestedPriority": "high",
                     "confidence": 0.9,
-                    "rationale": "Problema de acceso al sistema",
                     "warnings": [],
                 }
             )
@@ -100,10 +97,8 @@ def test_classify_success(client: TestClient, classify_provider) -> None:
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["category"] == "technical"
-    assert body["intent"] == "incident"
     assert body["suggested_priority"] == "high"
     assert body["confidence"] == 0.9
-    assert body["rationale"]
     assert body["warnings"] == []
     assert body["suggestion_id"] > 0
     assert body["trace_id"]
@@ -125,11 +120,8 @@ def test_classify_other_tenant_is_404(client: TestClient, classify_provider) -> 
 def test_classify_low_confidence_adds_warning(client: TestClient, classify_provider) -> None:
     classify_provider(ClassifyMock(payload={
         "category": "general",
-        "subcategory": None,
-        "intent": "other",
         "suggestedPriority": "low",
         "confidence": 0.3,
-        "rationale": "Información insuficiente",
         "warnings": [],
     }))
     tokens = register_login(client, "low@example.com", "agent", "ten")
@@ -174,7 +166,7 @@ def test_classify_persists_suggestion_without_pii(client: TestClient, classify_p
         assert sug.type == "classification"
         assert sug.state == "draft"
         assert sug.confidence == 0.9
-        assert sug.prompt_version == "1.0.0"
+        assert sug.prompt_version == "1.1.0"
         assert sug.model == "mock-classifier"
         serialized = json.dumps(sug.output)
         assert "4111" not in serialized
@@ -190,7 +182,6 @@ def test_classify_success_with_default_mock(client: TestClient) -> None:
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["category"] == "technical"
-    assert body["intent"] == "incident"
     assert body["suggested_priority"] == "high"
 
 

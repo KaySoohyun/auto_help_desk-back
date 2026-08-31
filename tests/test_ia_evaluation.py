@@ -90,10 +90,8 @@ def test_classification_matches_dataset(client: TestClient, patch_provider, inde
     body = resp.json()
     # Schema válido (FR-01) y coherente con el caso de control
     assert body["category"] == case["expected_category"]
-    assert body["intent"] == case["expected_intent"]
     assert body["suggested_priority"] == case["expected_priority"]
     assert body["confidence"] > 0
-    assert isinstance(body["rationale"], str)
     assert body["suggestion_id"] > 0
     assert body["trace_id"]
 

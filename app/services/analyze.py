@@ -223,11 +223,8 @@ class AnalyzeService:
         if classification_result:
             classification_dict = {
                 "category": classification_result.category,
-                "subcategory": classification_result.subcategory,
-                "intent": classification_result.intent,
                 "suggested_priority": classification_result.suggested_priority,
                 "confidence": classification_result.confidence,
-                "rationale": classification_result.rationale,
                 "warnings": classification_result.warnings,
                 "suggestion_id": classification_suggestion.id if classification_suggestion else None,
                 "trace_id": trace_id,

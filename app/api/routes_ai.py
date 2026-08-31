@@ -179,11 +179,8 @@ def classify_ticket(
         ) from exc
     return ClassificationOut(
         category=result.category,
-        subcategory=result.subcategory,
-        intent=result.intent,
         suggested_priority=result.suggested_priority,
         confidence=result.confidence,
-        rationale=result.rationale,
         warnings=result.warnings,
         suggestion_id=suggestion.id,
         trace_id=trace_id,

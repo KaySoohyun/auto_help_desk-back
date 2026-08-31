@@ -32,11 +32,8 @@ class ClassificationError(ValueError):
 @dataclass
 class ClassificationResult:
     category: str
-    subcategory: str | None
-    intent: str
     suggested_priority: str
     confidence: float
-    rationale: str
     warnings: list[str] = field(default_factory=list)
 
 
@@ -105,7 +102,6 @@ class TicketClassifier:
 
         system = build_classify_system(
             categories=settings.ai_classify_categories,
-            intents=settings.ai_classify_intents,
         )
         user_prompt = build_classify_user_prompt(
             subject=subject,
@@ -130,10 +126,7 @@ class TicketClassifier:
             type="classification",
             output={
                 "category": parsed.category,
-                "subcategory": parsed.subcategory,
-                "intent": parsed.intent,
                 "suggested_priority": parsed.suggested_priority,
-                "rationale": parsed.rationale,
             },
             confidence=parsed.confidence,
             model=result_payload["model"],
@@ -157,7 +150,6 @@ class TicketClassifier:
                 detail={
                     "ticket_id": ticket_id,
                     "category": parsed.category,
-                    "intent": parsed.intent,
                     "suggested_priority": parsed.suggested_priority,
                     "model": result_payload["model"],
                     "prompt_version": CLASSIFY_PROMPT_VERSION,
@@ -175,9 +167,8 @@ class TicketClassifier:
             raise ClassificationError("Salida de clasificación inválida")
 
         category = str(data.get("category") or "").strip()
-        intent = str(data.get("intent") or "").strip()
         priority = str(data.get("suggestedPriority") or "").strip().lower()
-        if not category or not intent or priority not in VALID_PRIORITIES:
+        if not category or priority not in VALID_PRIORITIES:
             raise ClassificationError("Campos de clasificación inválidos")
 
         confidence = float(data.get("confidence", 0.0))
@@ -188,10 +179,7 @@ class TicketClassifier:
 
         return ClassificationResult(
             category=category,
-            subcategory=str(data.get("subcategory") or "") or None,
-            intent=intent,
             suggested_priority=priority,
             confidence=confidence,
-            rationale=str(data.get("rationale") or ""),
             warnings=warnings,
         )

@@ -21,7 +21,7 @@ class GuardrailMock(MockLLMProvider):
 
     def complete(self, **kwargs):
         content = self._content if self._content is not None else json.dumps(
-            {"category": "general", "intent": "question", "suggestedPriority": "medium", "confidence": 0.9}
+            {"category": "general", "suggestedPriority": "medium", "confidence": 0.9}
         )
         return type("R", (), {
             "content": content,
@@ -112,10 +112,9 @@ def test_check_input_clean_passes() -> None:
 def test_classify_blocked_when_output_leaks_pii(client: TestClient, guardrail_provider) -> None:
     guardrail_provider(GuardrailMock(content=json.dumps({
         "category": "general",
-        "intent": "question",
         "suggestedPriority": "medium",
         "confidence": 0.9,
-        "rationale": "Cliente: cliente@example.com",
+        "warnings": ["Cliente: cliente@example.com"],
     })))
     tokens = register_login(client, "pii@example.com", "agent", "ten")
     ticket = _create_ticket(client, tokens)
@@ -179,10 +178,9 @@ def test_guardrails_disabled_does_not_block(client: TestClient, guardrail_provid
     monkeypatch.setattr(app_settings, "guardrails_enabled", False)
     guardrail_provider(GuardrailMock(content=json.dumps({
         "category": "general",
-        "intent": "question",
         "suggestedPriority": "medium",
         "confidence": 0.9,
-        "rationale": "Cliente: cliente@example.com",
+        "warnings": ["Cliente: cliente@example.com"],
     })))
     tokens = register_login(client, "off@example.com", "agent", "ten")
     ticket = _create_ticket(client, tokens)

@@ -45,7 +45,7 @@ def test_mock_provider_is_task_aware() -> None:
 
     provider = MockLLMProvider()
     cases = {
-        "classify": {"category", "intent", "suggestedPriority"},
+        "classify": {"category", "suggestedPriority"},
         "summary": {"summary"},
         "reply": {"suggestedReply"},
     }

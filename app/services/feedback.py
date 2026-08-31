@@ -65,10 +65,15 @@ class FeedbackService:
         action: str,
         reason: str | None = None,
         edited_content_hash: str | None = None,
+        edited_output: dict | None = None,
         user_id: int | None = None,
         trace_id: str | None = None,
     ) -> tuple[Feedback, AISuggestion]:
         """Registra el feedback y actualiza el estado de la sugerencia.
+
+        Si viene `edited_output` (contenido editado por el agente, p. ej. resumen
+        corregido), se persiste sobre el `output` de la sugerencia para que quede
+        disponible al re-entrar al ticket. Sin PII cruda (016).
 
         Sugerencia fuera del alcance del usuario o inexistente → `PermissionError`.
         """
@@ -103,6 +108,8 @@ class FeedbackService:
             feedback.edited_content_hash = edited_content_hash
 
         suggestion.state = STATE_BY_ACTION[action]
+        if edited_output is not None:
+            suggestion.output = edited_output
         self._db.commit()
         self._db.refresh(feedback)
         self._db.refresh(suggestion)
