@@ -23,7 +23,7 @@ def test_tenant_admin_allowed(client: TestClient) -> None:
     )
     assert response.status_code == 200
     # El propio admin pertenece a ten-1, por eso la lista lo incluye
-    assert [u["email"] for u in response.json()] == ["ta@example.com"]
+    assert [u["email"] for u in response.json()["items"]] == ["ta@example.com"]
 
 
 def test_platform_admin_without_tenant_forbidden(client: TestClient) -> None:

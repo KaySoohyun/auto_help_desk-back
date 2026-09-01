@@ -25,7 +25,7 @@ def test_login_success_is_audited(client: TestClient) -> None:
 def test_login_failure_is_audited(client: TestClient) -> None:
     client.post(
         "/auth/register",
-        json={"email": "fail@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "fail@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
     )
     client.post("/auth/login", json={"email": "fail@example.com", "password": "incorrecta"})
     with SessionLocal() as db:

@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.categories import TICKET_CATEGORIES
@@ -10,6 +11,7 @@ from app.core.permissions import EDIT_RESPONSE, READ_TICKETS, SEND_RESPONSE, req
 from app.core.metrics import metrics
 from app.database import get_db
 from app.models.user import User
+from app.models.user_tenant import UserTenant
 from app.repositories.tickets import MessageView, TicketRepository, TicketSummaryView, TicketView
 from app.schemas.ticket import (
     TicketCreate,
@@ -49,6 +51,24 @@ def _get_or_404(repo: TicketRepository, ticket_id: int):
     if ticket is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado")
     return ticket
+
+
+def _is_assignable_agent(db: Session, user_id: int, tenant_id: str) -> bool:
+    """True si `user_id` es un agente activo del tenant (membresía o legacy)."""
+    if user_id is None:
+        return False
+    target = db.get(User, user_id)
+    if target is None or not target.is_active or target.role != "agent":
+        return False
+    if target.tenant_id == tenant_id:
+        return True
+    membership = db.scalar(
+        select(UserTenant.id).where(
+            UserTenant.user_id == user_id,
+            UserTenant.tenant_id == tenant_id,
+        )
+    )
+    return membership is not None
 
 
 def _audit(
@@ -147,13 +167,38 @@ def update_ticket(
     changes = payload.model_dump(exclude_unset=True)
     if not changes:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Sin cambios")
+
+    repo = _repo(db, tenant_ids)
+    ticket = _get_or_404(repo, ticket_id)
+
+    # Reglas de asignación (feature 018):
+    # - agent: solo asignarse a sí mismo o desasignar (null).
+    # - otros roles: cualquier agente activo del tenant del ticket.
+    audit_detail: dict = dict(changes)
+    if "assignee_id" in changes:
+        new_assignee = changes["assignee_id"]
+        if current_user.role == "agent":
+            if new_assignee not in (None, current_user.id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Solo podés asignarte a vos mismo",
+                )
+        elif new_assignee is not None:
+            if not _is_assignable_agent(db, new_assignee, ticket.tenant_id):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Usuario no encontrado",
+                )
+            target = db.get(User, new_assignee)
+            audit_detail["assignee_name"] = target.name if target else None
+
     try:
-        ticket = _repo(db, tenant_ids).update(ticket_id, changes)
+        ticket = repo.update(ticket_id, changes)
     except PermissionError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado") from exc
     if ticket is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket no encontrado")
-    _audit(audit, current_user, "ticket.updated", ticket_id, trace_id, detail=changes)
+    _audit(audit, current_user, "ticket.updated", ticket_id, trace_id, detail=audit_detail)
     return ticket
 
 

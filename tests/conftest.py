@@ -61,7 +61,7 @@ def register_login(client: TestClient, email: str, role: str, tenant_id: str | N
     if role in PUBLIC_REGISTRATION_ROLES:
         client.post(
             "/auth/register",
-            json={"email": email, "password": password, "role": role, "tenant_id": tenant_id},
+            json={"email": email, "name": "Test Usuario", "password": password, "role": role, "tenant_id": tenant_id},
         )
     else:
         with SessionLocal() as db:

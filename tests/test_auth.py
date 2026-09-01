@@ -17,6 +17,7 @@ def test_health(client: TestClient) -> None:
 def test_register_creates_user(client: TestClient) -> None:
     payload = {
         "email": "admin@example.com",
+        "name": "Test Usuario",
         "password": "segura-123",
         "role": "agent",
     }
@@ -31,7 +32,7 @@ def test_register_rejects_admin_roles(client: TestClient) -> None:
     for role in ("platform_admin", "tenant_admin"):
         response = client.post(
             "/auth/register",
-            json={"email": f"{role}@example.com", "password": "segura-123", "role": role},
+            json={"name": "Test Usuario", "email": f"{role}@example.com", "password": "segura-123", "role": role},
         )
         assert response.status_code == 403
         assert "Rol no permitido" in response.json()["detail"]
@@ -40,6 +41,7 @@ def test_register_rejects_admin_roles(client: TestClient) -> None:
 def test_register_duplicate_email(client: TestClient) -> None:
     payload = {
         "email": "dup@example.com",
+        "name": "Test Usuario",
         "password": "segura-123",
         "role": "agent",
     }
@@ -52,7 +54,7 @@ def test_register_duplicate_email(client: TestClient) -> None:
 def test_login_returns_tokens(client: TestClient) -> None:
     client.post(
         "/auth/register",
-        json={"email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
     )
     response = client.post("/auth/login", json={"email": "agent@example.com", "password": "segura-123"})
     assert response.status_code == 200
@@ -66,7 +68,7 @@ def test_login_returns_tokens(client: TestClient) -> None:
 def test_login_wrong_password(client: TestClient) -> None:
     client.post(
         "/auth/register",
-        json={"email": "bad@example.com", "password": "segura-123", "role": "agent"},
+        json={"name": "Test Usuario", "email": "bad@example.com", "password": "segura-123", "role": "agent"},
     )
     response = client.post("/auth/login", json={"email": "bad@example.com", "password": "incorrecta"})
     assert response.status_code == 401
@@ -80,7 +82,7 @@ def test_me_requires_token(client: TestClient) -> None:
 def test_me_with_valid_token(client: TestClient) -> None:
     client.post(
         "/auth/register",
-        json={"email": "me@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "me@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
     )
     login = client.post("/auth/login", json={"email": "me@example.com", "password": "segura-123"})
     token = login.json()["access_token"]
@@ -96,7 +98,7 @@ def test_me_with_valid_token(client: TestClient) -> None:
 def test_refresh_rotates_token(client: TestClient) -> None:
     client.post(
         "/auth/register",
-        json={"email": "rot@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "rot@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
     )
     login = client.post("/auth/login", json={"email": "rot@example.com", "password": "segura-123"})
     old_refresh = login.json()["refresh_token"]
@@ -115,7 +117,7 @@ def test_refresh_rotates_token(client: TestClient) -> None:
 def test_logout_revokes_refresh(client: TestClient) -> None:
     client.post(
         "/auth/register",
-        json={"email": "out@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "out@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
     )
     login = client.post("/auth/login", json={"email": "out@example.com", "password": "segura-123"})
     refresh_token = login.json()["refresh_token"]
@@ -138,7 +140,7 @@ def test_access_token_claims(client: TestClient) -> None:
 
     client.post(
         "/auth/register",
-        json={"email": "claims@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "claims@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
     )
     login = client.post("/auth/login", json={"email": "claims@example.com", "password": "segura-123"})
     token = login.json()["access_token"]

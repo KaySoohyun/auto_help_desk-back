@@ -2,6 +2,34 @@
 
 _Registro de cambios del proyecto. Formato: fecha · descripción · rama._
 
+## 2026-09-01 · Paginación server-side en admin (usuarios y clientes)
+
+- **`GET /admin/users`** → `UserListOut {items, total, limit, offset}`; nuevos filtros `q` (nombre o email `ilike`) y `role`. Se excluye `customer`.
+- **`GET /admin/customers`** → `CustomerListOut {items, total, limit, offset}`; filtro `q` (nombre o empresa `ilike`) además de `tenant_id` validado por membresía.
+- Renombrados `CustomerAdminOut` (item) y `CustomerListOut` (envelope); ajustados tests existentes (`test_users_name`, `test_permissions`, `test_tenant_isolation`) a `["items"]`. Suite backend **322 passed** (nota: `test_crypto::test_tampered_ciphertext_fails` es flaky, pasa aislado).
+
+## 2026-09-01 · Pestaña "Clientes" en administración (endpoint sin PII)
+
+- **`GET /admin/customers`** (`app/api/routes_admin.py`, requieren `CONFIGURE_TENANT`): lista clientes del/los tenant(s) con **email enmascarado** (`mask_email` en `app/services/pii.py`: `juan@x.com` → `ju***@x.com`) y filtro tenant-scoped. Acepta `tenant_id` opcional validado contra las membresías del usuario (403 si no es miembro). No expone emails crudos (PII).
+- **Frontend**: tab "Clientes" en `AdminNav`, página `/app/admin/customers`, vista `AdminCustomersView` (nombre, email enmascarado, empresa, plan, registro) vía BFF `/api/bff/admin/customers` + hook `useAdminCustomers`.
+- **Tests**: `tests/test_admin.py` +3 (listado enmascarado, aislamiento por tenant, 403 para agent). Suite backend **322 passed**.
+
+## 2026-09-01 · Excluir clientes de la gestión de usuarios del admin
+
+- **`GET /admin/users`** (`app/api/routes_admin.py`): el listado ahora filtra `User.role != "customer"`. Los clientes se auto-registran por el portal de personas (feature 020) y no se gestionan desde la consola de administración (no admiten cambio de rol ni gestión admin). Test manual como `demo.admin@example.com`.
+
+## 2026-08-31 · Nombre de usuario y reglas de asignación — feature 018
+
+- **Modelo**: `users.name` (`VARCHAR(255)`, nullable) en `app/models/user.py`; migración idempotente `scripts/migrate_users_name.py` (ALTER + backfill desde el local-part del email).
+- **Schemas**: `RegisterRequest.name` (obligatorio), `UserOut.name`, `UserCreate.name` (obligatorio), `UserUpdate.name` (opcional; validator acepta name/role/is_active).
+- **Registro** (`routes_auth.py`): persiste `name`; en rol `customer`, `customers.name` usa el nombre provisto (fallback al derivado del email).
+- **Admin** (`services/admin.py` + `routes_admin.py`): `create_user`/`update_user` reciben y auditan `name`.
+- **`GET /v1/agents`** (`routes_agents.py`, requiere `tickets:read`): agentes activos de los tenants efectivos (`AgentOut`: id/name/email/role), por membresía `user_tenants` o `users.tenant_id` legacy.
+- **Reglas de asignación** en `PATCH /v1/tickets/{id}` (`routes_tickets.py`): `agent` solo puede asignarse a sí mismo o desasignar (403 si otro); `supervisor`/`tenant_admin`/`platform_admin` pueden asignar a cualquier **agente activo del tenant del ticket** (membresía o legacy; 404 si no). Auditoría incluye `assignee_name`.
+- **Enriquecimiento**: `TicketOut`/`TicketSummaryOut.assignee {id,name,email,role}` y `TicketMessageOut.author_name` (`repositories/tickets.py` con queries batch); `KbArticleOut`/`KbArticleSummaryOut.author_name` (`repositories/kb.py`).
+- **Seed demo**: `scripts/seed_demo_users.py` asigna nombres a los usuarios demo.
+- **Tests**: `tests/test_users_name.py` (registro 201/422, me, admin CRUD con nombre) y `tests/test_assignments.py` (autoasignación, 403 a otro, supervisor→agente del tenant, 404 cross-tenant/inexistente, `/v1/agents`). Suite backend: **319 passed**. — `feat/bff`
+
 ## 2026-08-31 · Endpoints de tags (buscar y crear) — feature 017
 
 - **`app/api/routes_tags.py`** (nuevo router `tags`, prefijo `/v1/tags`):

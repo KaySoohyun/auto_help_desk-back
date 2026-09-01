@@ -20,7 +20,7 @@ def test_users_from_other_tenant_not_visible(client: TestClient) -> None:
         headers={"Authorization": f"Bearer {admin_a['access_token']}"},
     )
     assert response.status_code == 200
-    emails = {u["email"] for u in response.json()}
+    emails = {u["email"] for u in response.json()["items"]}
     assert "a1@example.com" in emails
     assert "a2@example.com" in emails
     assert "b1@example.com" not in emails

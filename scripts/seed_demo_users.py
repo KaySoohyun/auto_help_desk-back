@@ -38,12 +38,12 @@ DEMO_PASSWORD = "demo-pass-123"
 DEMO_SUBJECT_PREFIX = "[Demo]"
 
 SUPPORT_DEMO_USERS = [
-    {"email": "demo.agente@example.com", "role": "agent"},
-    {"email": "demo.supervisor@example.com", "role": "supervisor"},
-    {"email": "demo.admin@example.com", "role": "tenant_admin"},
+    {"email": "demo.agente@example.com", "role": "agent", "name": "Agente Demo"},
+    {"email": "demo.supervisor@example.com", "role": "supervisor", "name": "Supervisor Demo"},
+    {"email": "demo.admin@example.com", "role": "tenant_admin", "name": "Admin Empresa Demo"},
 ]
 
-PLATFORM_DEMO_USER = {"email": "demo.plataforma@example.com", "role": "platform_admin"}
+PLATFORM_DEMO_USER = {"email": "demo.plataforma@example.com", "role": "platform_admin", "name": "Admin Plataforma Demo"}
 
 # Plantilla de tickets por tenant. `status` se aplica después del create.
 TICKET_TEMPLATES = [
@@ -111,12 +111,16 @@ TICKET_TEMPLATES = [
 ]
 
 
-def _get_or_create_user(db, email: str, role: str, tenant_id: str | None) -> User:
+def _get_or_create_user(db, email: str, role: str, tenant_id: str | None, name: str = "") -> User:
     user = db.scalar(select(User).where(User.email == email))
     if user is not None:
+        if name and user.name != name:
+            user.name = name
+            db.commit()
         return user
     user = User(
         email=email,
+        name=name or None,
         password_hash=hash_password(DEMO_PASSWORD),
         role=role,
         tenant_id=tenant_id,
@@ -141,7 +145,11 @@ def _get_or_create_demo_customer(db, tenant) -> Customer:
     email = f"demo.cliente.{tenant.slug}@example.com"
     user = db.scalar(select(User).where(User.email == email))
     if user is None:
-        user = _get_or_create_user(db, email, "customer", tenant.id)
+        user = _get_or_create_user(
+            db, email, "customer", tenant.id, name=f"Cliente Demo · {tenant.name}"
+        )
+    else:
+        _ensure_name(db, user, f"Cliente Demo · {tenant.name}")
 
     customer = db.scalar(
         select(Customer).where(Customer.email == email, Customer.tenant_id == tenant.id)
@@ -202,6 +210,14 @@ def _seed_tenant_tickets(db, tenant, agent: User, customer: Customer) -> None:
             repo.add_message(ticket.id, author_id, body)
 
 
+def _ensure_name(db, user: User, name: str) -> None:
+    """Normaliza el nombre de un usuario demo existente."""
+    if user is not None and name and user.name != name:
+        user.name = name
+        db.commit()
+        print(f"  Nombre demo normalizado: {user.email} -> {name}")
+
+
 def seed_support_users(db) -> dict[str, User]:
     """Usuarios de soporte compartidos con membresía en todos los tenants."""
     tenants = db.scalars(select(Tenant).order_by(Tenant.name)).all()
@@ -210,7 +226,11 @@ def seed_support_users(db) -> dict[str, User]:
     for spec in SUPPORT_DEMO_USERS:
         user = db.scalar(select(User).where(User.email == spec["email"]))
         if user is None:
-            user = _get_or_create_user(db, spec["email"], spec["role"], tenants[0].id if tenants else None)
+            user = _get_or_create_user(
+                db, spec["email"], spec["role"], tenants[0].id if tenants else None, spec["name"]
+            )
+        else:
+            _ensure_name(db, user, spec["name"])
         users[spec["email"]] = user
         for tenant in tenants:
             _ensure_membership(db, user.id, tenant.id, spec["role"])
@@ -221,7 +241,15 @@ def seed_support_users(db) -> dict[str, User]:
 def seed_platform_demo(db) -> None:
     user = db.scalar(select(User).where(User.email == PLATFORM_DEMO_USER["email"]))
     if user is None:
-        _get_or_create_user(db, PLATFORM_DEMO_USER["email"], PLATFORM_DEMO_USER["role"], None)
+        _get_or_create_user(
+            db,
+            PLATFORM_DEMO_USER["email"],
+            PLATFORM_DEMO_USER["role"],
+            None,
+            PLATFORM_DEMO_USER["name"],
+        )
+    else:
+        _ensure_name(db, user, PLATFORM_DEMO_USER["name"])
 
 
 def seed_per_tenant(db, users: dict[str, User]) -> None:

@@ -3,6 +3,17 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 
+class AgentRefOut(BaseModel):
+    """Usuario asignado a un ticket (nombre + email para display)."""
+
+    id: int
+    name: str | None
+    email: str
+    role: str
+
+    model_config = {"from_attributes": True}
+
+
 class TicketCreate(BaseModel):
     subject: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1)
@@ -27,6 +38,7 @@ class TicketMessageOut(BaseModel):
     author_id: int | None
     body: str
     created_at: datetime
+    author_name: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -41,6 +53,7 @@ class TicketOut(BaseModel):
     priority: str | None
     status: str
     assignee_id: int | None
+    assignee: AgentRefOut | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -56,6 +69,7 @@ class TicketSummaryOut(BaseModel):
     priority: str | None
     status: str
     assignee_id: int | None
+    assignee: AgentRefOut | None = None
     created_at: datetime
     updated_at: datetime
 

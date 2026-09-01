@@ -29,7 +29,7 @@ def test_tenant_admin_creates_user_in_own_tenant(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
     resp = client.post(
         "/admin/users",
-        json={"email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
         headers=_auth(tokens),
     )
     assert resp.status_code == 201
@@ -42,7 +42,7 @@ def test_tenant_admin_creates_user_in_own_tenant(client: TestClient) -> None:
 
 def test_create_user_duplicate_email_409(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
-    payload = {"email": "dup@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"}
+    payload = {"email": "dup@example.com", "name": "Test Usuario", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"}
     assert client.post("/admin/users", json=payload, headers=_auth(tokens)).status_code == 201
     resp = client.post("/admin/users", json=payload, headers=_auth(tokens))
     assert resp.status_code == 409
@@ -52,7 +52,7 @@ def test_create_user_invalid_role_422(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
     resp = client.post(
         "/admin/users",
-        json={"email": "x@example.com", "password": "segura-123", "role": "hacker", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "x@example.com", "password": "segura-123", "role": "hacker", "tenant_id": "ten-1"},
         headers=_auth(tokens),
     )
     assert resp.status_code == 422
@@ -62,7 +62,7 @@ def test_tenant_admin_cannot_create_platform_admin(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
     resp = client.post(
         "/admin/users",
-        json={"email": "boss@example.com", "password": "segura-123", "role": "platform_admin"},
+        json={"name": "Test Usuario", "email": "boss@example.com", "password": "segura-123", "role": "platform_admin"},
         headers=_auth(tokens),
     )
     assert resp.status_code == 403
@@ -72,7 +72,7 @@ def test_tenant_admin_cannot_create_in_other_tenant(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
     resp = client.post(
         "/admin/users",
-        json={"email": "x@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-2"},
+        json={"name": "Test Usuario", "email": "x@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-2"},
         headers=_auth(tokens),
     )
     assert resp.status_code == 403
@@ -82,7 +82,7 @@ def test_platform_admin_creates_user_in_any_tenant(client: TestClient) -> None:
     tokens = register_login(client, "root@example.com", "platform_admin")
     resp = client.post(
         "/admin/users",
-        json={"email": "admin2@example.com", "password": "segura-123", "role": "tenant_admin", "tenant_id": "ten-9"},
+        json={"name": "Test Usuario", "email": "admin2@example.com", "password": "segura-123", "role": "tenant_admin", "tenant_id": "ten-9"},
         headers=_auth(tokens),
     )
     assert resp.status_code == 201
@@ -93,7 +93,7 @@ def test_platform_admin_requires_tenant_id_for_create(client: TestClient) -> Non
     tokens = register_login(client, "root@example.com", "platform_admin")
     resp = client.post(
         "/admin/users",
-        json={"email": "x@example.com", "password": "segura-123", "role": "agent"},
+        json={"name": "Test Usuario", "email": "x@example.com", "password": "segura-123", "role": "agent"},
         headers=_auth(tokens),
     )
     assert resp.status_code == 422
@@ -103,7 +103,7 @@ def test_update_user_role(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
     created = client.post(
         "/admin/users",
-        json={"email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
         headers=_auth(tokens),
     ).json()
     resp = client.patch(
@@ -133,7 +133,7 @@ def test_deactivate_other_user(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
     created = client.post(
         "/admin/users",
-        json={"email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
         headers=_auth(tokens),
     ).json()
     resp = client.patch(f"/admin/users/{created['id']}", json={"is_active": False}, headers=_auth(tokens))
@@ -145,7 +145,7 @@ def test_user_operations_require_permission(client: TestClient) -> None:
     tokens = register_login(client, "agent@example.com", "agent", "ten-1")
     resp = client.post(
         "/admin/users",
-        json={"email": "x@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "x@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
         headers=_auth(tokens),
     )
     assert resp.status_code == 403
@@ -293,7 +293,7 @@ def test_admin_actions_are_audited(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
     created = client.post(
         "/admin/users",
-        json={"email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
         headers=_auth(tokens),
     ).json()
     client.patch(f"/admin/users/{created['id']}", json={"role": "supervisor"}, headers=_auth(tokens))
@@ -312,9 +312,57 @@ def test_admin_audit_no_sensitive_data(client: TestClient) -> None:
     tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
     client.post(
         "/admin/users",
-        json={"email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
+        json={"name": "Test Usuario", "email": "agent@example.com", "password": "segura-123", "role": "agent", "tenant_id": "ten-1"},
         headers=_auth(tokens),
     )
     for e in _events("admin.user_created"):
         assert "password" not in e.detail
         assert "segura-123" not in str(e.__dict__)
+
+
+# --- clientes (consola admin, sin PII) ------------------------------
+
+
+def test_admin_customers_list_masked_only(client: TestClient) -> None:
+    """El admin ve clientes del tenant con email enmascarado, nunca el raw."""
+    customer_tokens = register_login(client, "cliente@example.com", "customer", "ten-1")
+    assert "access_token" in customer_tokens
+
+    admin_tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
+    resp = client.get("/admin/customers", headers=_auth(admin_tokens))
+    assert resp.status_code == 200
+    customers = resp.json()["items"]
+    assert any(c["email_masked"] == "cl***@example.com" for c in customers)
+    assert all("email" not in c for c in customers)
+    assert all(c["email_masked"] != "cliente@example.com" for c in customers)
+    assert all(c["tenant_id"] == "ten-1" for c in customers)
+
+
+def test_admin_customers_tenant_isolation(client: TestClient) -> None:
+    register_login(client, "otro@example.com", "customer", "ten-2")
+    admin_tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
+    customers = client.get("/admin/customers", headers=_auth(admin_tokens)).json()["items"]
+    assert all(c["tenant_id"] == "ten-1" for c in customers)
+    assert not any(c["email_masked"] == "ot***@example.com" for c in customers)
+
+
+def test_admin_customers_requires_admin_role(client: TestClient) -> None:
+    agent_tokens = register_login(client, "agent@example.com", "agent", "ten-1")
+    assert client.get("/admin/customers", headers=_auth(agent_tokens)).status_code == 403
+
+
+def test_admin_customers_filter_by_tenant(client: TestClient) -> None:
+    register_login(client, "c1@example.com", "customer", "ten-1")
+    register_login(client, "c2@example.com", "customer", "ten-2")
+    tokens = register_login(client, "admin@example.com", "tenant_admin", "ten-1")
+    headers = _auth(tokens)
+    # Sin filtro: solo su tenant (ten-1).
+    all_customers = client.get("/admin/customers", headers=headers).json()["items"]
+    assert all(c["tenant_id"] == "ten-1" for c in all_customers)
+    # Filtro explícito a su tenant.
+    filtered = client.get("/admin/customers", params={"tenant_id": "ten-1"}, headers=headers)
+    assert filtered.status_code == 200
+    assert all(c["tenant_id"] == "ten-1" for c in filtered.json()["items"])
+    # Filtro a un tenant que no es miembro (sin membresía ni legacy) -> 403.
+    denied = client.get("/admin/customers", params={"tenant_id": "ten-2"}, headers=headers)
+    assert denied.status_code == 403

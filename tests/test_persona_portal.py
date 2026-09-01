@@ -98,7 +98,7 @@ def test_customer_isolation_cross_tenant_same_user_scope(client: TestClient) -> 
     # Customer de ten-2 con acceso a ambos tenants (vía membresía) no ve tickets ajenos
     client.post(
         "/auth/register",
-        json={"email": "cM3@example.com", "password": "segura-123", "role": "customer", "tenant_ids": ["ten-1", "ten-2"]},
+        json={"name": "Test Usuario", "email": "cM3@example.com", "password": "segura-123", "role": "customer", "tenant_ids": ["ten-1", "ten-2"]},
     )
     login = client.post("/auth/login", json={"email": "cM3@example.com", "password": "segura-123"})
     tokens_c = login.json()

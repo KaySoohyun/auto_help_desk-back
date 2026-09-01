@@ -11,7 +11,18 @@ from app.core.config import settings
 from app.core.crypto import InvalidCipherValue, decrypt_field, encrypt_field
 from app.models.tag import Tag, TicketTag
 from app.models.ticket import Ticket, TicketMessage
+from app.models.user import User
 from app.repositories.base import TenantScopedRepository
+
+
+@dataclass
+class AgentRef:
+    """Referencia a un usuario que aparece como asignado a un ticket."""
+
+    id: int
+    name: str | None
+    email: str
+    role: str
 
 
 @dataclass
@@ -29,6 +40,7 @@ class TicketView:
     assignee_id: int | None
     created_at: datetime
     updated_at: datetime
+    assignee: AgentRef | None = None
 
 
 @dataclass
@@ -45,6 +57,7 @@ class TicketSummaryView:
     assignee_id: int | None
     created_at: datetime
     updated_at: datetime
+    assignee: AgentRef | None = None
 
 
 @dataclass
@@ -56,6 +69,7 @@ class MessageView:
     author_id: int | None
     body: str
     created_at: datetime
+    author_name: str | None = None
 
 
 class TicketRepository(TenantScopedRepository[Ticket]):
@@ -92,6 +106,28 @@ class TicketRepository(TenantScopedRepository[Ticket]):
             return decrypt_field(value, settings.encryption_key)
         except InvalidCipherValue:
             return value
+
+    def _enrich_assignees(self, views: list[TicketView | TicketSummaryView]) -> None:
+        """Rellena `assignee` (nombre/email) con una query batch por assignee_id."""
+        assignee_ids = {v.assignee_id for v in views if v.assignee_id is not None}
+        if not assignee_ids:
+            return
+        users = self.db.query(User).filter(User.id.in_(assignee_ids)).all()
+        by_id = {u.id: u for u in users}
+        for v in views:
+            u = by_id.get(v.assignee_id)
+            if u is not None:
+                v.assignee = AgentRef(id=u.id, name=u.name, email=u.email, role=u.role)
+
+    def _enrich_author_names(self, messages: list[MessageView]) -> None:
+        """Rellena `author_name` de los mensajes con una query batch."""
+        author_ids = {m.author_id for m in messages if m.author_id is not None}
+        if not author_ids:
+            return
+        users = self.db.query(User).filter(User.id.in_(author_ids)).all()
+        by_id = {u.id: u.name for u in users}
+        for m in messages:
+            m.author_name = by_id.get(m.author_id)
 
     def _summary_view(self, ticket: Ticket) -> TicketSummaryView:
         # No accede a `description` (columna diferida) para no disparar lazy load en listados.
@@ -146,13 +182,17 @@ class TicketRepository(TenantScopedRepository[Ticket]):
         self.db.add(ticket)
         self.db.commit()
         self.db.refresh(ticket)
-        return self._view(ticket)
+        view = self._view(ticket)
+        self._enrich_assignees([view])
+        return view
 
     def get_or_none(self, pk) -> TicketView | None:
         ticket = super().get_or_none(pk)
         if ticket is None:
             return None
-        return self._view(ticket)
+        view = self._view(ticket)
+        self._enrich_assignees([view])
+        return view
 
     def list(
         self,
@@ -205,7 +245,9 @@ class TicketRepository(TenantScopedRepository[Ticket]):
             total = rows[0]._total
         else:
             total = self.db.scalar(select(func.count()).select_from(Ticket).where(*filters)) or 0
-        return [self._summary_view(t) for t, _ in rows], total
+        summary_views = [self._summary_view(t) for t, _ in rows]
+        self._enrich_assignees(summary_views)
+        return summary_views, total
 
     def update(self, pk, changes: dict[str, Any]) -> TicketView | None:
         ticket = super().get_or_none(pk)
@@ -218,7 +260,9 @@ class TicketRepository(TenantScopedRepository[Ticket]):
                 setattr(ticket, field, value)
         self.db.commit()
         self.db.refresh(ticket)
-        return self._view(ticket)
+        view = self._view(ticket)
+        self._enrich_assignees([view])
+        return view
 
     def _view_message(self, message: TicketMessage) -> MessageView:
         return MessageView(
@@ -247,5 +291,6 @@ class TicketRepository(TenantScopedRepository[Ticket]):
             .where(Ticket.tenant_id.in_(self.tenant_ids), TicketMessage.ticket_id == ticket_id)
             .order_by(TicketMessage.created_at.asc())
         )
-        messages = list(self.db.scalars(stmt).all())
-        return [self._view_message(m) for m in messages]
+        messages = [self._view_message(m) for m in self.db.scalars(stmt).all()]
+        self._enrich_author_names(messages)
+        return messages

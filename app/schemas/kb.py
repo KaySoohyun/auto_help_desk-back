@@ -27,6 +27,7 @@ class KbArticleOut(BaseModel):
     tags: list[str]
     status: str
     author_id: int
+    author_name: str | None = None
     current_version: int
     created_at: datetime
     updated_at: datetime
@@ -41,6 +42,7 @@ class KbArticleSummaryOut(BaseModel):
     tags: list[str]
     status: str
     author_id: int
+    author_name: str | None = None
     current_version: int
     created_at: datetime
     updated_at: datetime

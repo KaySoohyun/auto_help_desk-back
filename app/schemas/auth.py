@@ -7,6 +7,7 @@ from app.models.user import UserRole
 
 class RegisterRequest(BaseModel):
     email: EmailStr
+    name: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=8, max_length=128)
     role: UserRole
     tenant_id: str | None = None  # Legacy: único tenant (compatibilidad con tests)
@@ -42,6 +43,7 @@ class TenantInfo(BaseModel):
 class UserOut(BaseModel):
     id: int
     email: EmailStr
+    name: str | None  # Nombre de display
     role: str  # Rol principal (legacy, para compatibilidad)
     tenant_id: str | None  # Tenant principal (legacy, para compatibilidad)
     is_active: bool

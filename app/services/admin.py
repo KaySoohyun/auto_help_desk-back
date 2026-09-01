@@ -120,7 +120,7 @@ class AdminService:
 
     # -- usuarios ----------------------------------------------------------
 
-    def create_user(self, *, email: str, password: str, role: str, tenant_id: str | None) -> User:
+    def create_user(self, *, email: str, name: str, password: str, role: str, tenant_id: str | None) -> User:
         target_tenant = self._resolve_target_tenant(tenant_id)
         self._assert_role_assignable(role)
 
@@ -130,6 +130,7 @@ class AdminService:
 
         user = User(
             email=email,
+            name=name,
             password_hash=hash_password(password),
             role=role,
             tenant_id=target_tenant,
@@ -140,12 +141,19 @@ class AdminService:
         self._db.refresh(user)
         self._log_audit(
             "admin.user_created",
-            {"user_id": user.id, "role": role, "tenant_id": target_tenant},
+            {"user_id": user.id, "name": name, "role": role, "tenant_id": target_tenant},
             user_id=self._user.id,
         )
         return user
 
-    def update_user(self, user_id: int, *, role: str | None, is_active: bool | None) -> User:
+    def update_user(
+        self,
+        user_id: int,
+        *,
+        role: str | None,
+        is_active: bool | None,
+        name: str | None = None,
+    ) -> User:
         if self._is_platform_admin:
             target = self._db.get(User, user_id)
         else:
@@ -170,6 +178,9 @@ class AdminService:
         if is_active is not None and is_active != target.is_active:
             target.is_active = is_active
             changes["is_active"] = is_active
+        if name is not None and name != target.name:
+            target.name = name
+            changes["name"] = name
 
         if changes:
             self._db.commit()

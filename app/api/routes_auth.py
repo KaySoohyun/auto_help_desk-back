@@ -77,6 +77,7 @@ def _user_to_user_out(user: User, db: Session, active_tenant_id: str | None = No
     return UserOut(
         id=user.id,
         email=user.email,
+        name=user.name,
         role=user.role,
         tenant_id=active_tenant_id if active_tenant_id is not None else user.tenant_id,
         is_active=user.is_active,
@@ -167,6 +168,7 @@ def register(
 
     user = User(
         email=payload.email,
+        name=payload.name,
         password_hash=hash_password(payload.password),
         role=payload.role,
         tenant_id=primary_tenant_id,
@@ -189,7 +191,7 @@ def register(
             db.add(
                 Customer(
                     tenant_id=customer_tenant,
-                    name=_customer_name_from_email(payload.email),
+                    name=payload.name or _customer_name_from_email(payload.email),
                     email=payload.email,
                     user_id=user.id,
                 )

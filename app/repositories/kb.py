@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models.kb import KbArticle, KbArticleTag, KbArticleVersion
 from app.models.tag import Tag
+from app.models.user import User
 from app.repositories.base import TenantScopedRepository
 
 
@@ -73,6 +74,17 @@ class KbRepository(TenantScopedRepository[KbArticle]):
             "published_at": article.published_at,
         }
 
+    def _with_author_names(self, items: list[dict]) -> list[dict]:
+        """Rellena `author_name` en los dicts con una query batch por author_id."""
+        author_ids = {d.get("author_id") for d in items if d.get("author_id")}
+        names: dict[int, str | None] = {}
+        if author_ids:
+            users = self.db.query(User).filter(User.id.in_(author_ids)).all()
+            names = {u.id: u.name for u in users}
+        for d in items:
+            d["author_name"] = names.get(d.get("author_id"))
+        return items
+
     def _summary(self, article: KbArticle) -> dict:
         data = self._with_tags(article)
         del data["body"]
@@ -121,13 +133,13 @@ class KbRepository(TenantScopedRepository[KbArticle]):
             .offset(offset)
         )
         articles = list(self.db.scalars(stmt).all())
-        return [self._summary(a) for a in articles], total
+        return self._with_author_names([self._summary(a) for a in articles]), total
 
     def get_or_none(self, pk) -> dict | None:
         article = super().get_or_none(pk)
         if article is None:
             return None
-        return self._with_tags(article)
+        return self._with_author_names([self._with_tags(article)])[0]
 
     def create(
         self,
@@ -161,7 +173,7 @@ class KbRepository(TenantScopedRepository[KbArticle]):
         self.db.add(version)
         self.db.commit()
         self.db.refresh(article)
-        return self._with_tags(article)
+        return self._with_author_names([self._with_tags(article)])[0]
 
     def update(
         self,
@@ -199,7 +211,7 @@ class KbRepository(TenantScopedRepository[KbArticle]):
         self.db.add(version)
         self.db.commit()
         self.db.refresh(article)
-        return self._with_tags(article)
+        return self._with_author_names([self._with_tags(article)])[0]
 
     def publish(self, pk) -> dict | None:
         article = super().get_or_none(pk)
@@ -212,7 +224,7 @@ class KbRepository(TenantScopedRepository[KbArticle]):
         article.updated_at = datetime.now(UTC)
         self.db.commit()
         self.db.refresh(article)
-        return self._with_tags(article)
+        return self._with_author_names([self._with_tags(article)])[0]
 
     def archive(self, pk) -> dict | None:
         article = super().get_or_none(pk)
@@ -224,7 +236,7 @@ class KbRepository(TenantScopedRepository[KbArticle]):
         article.updated_at = datetime.now(UTC)
         self.db.commit()
         self.db.refresh(article)
-        return self._with_tags(article)
+        return self._with_author_names([self._with_tags(article)])[0]
 
     def restore(self, pk) -> dict | None:
         article = super().get_or_none(pk)
@@ -237,7 +249,7 @@ class KbRepository(TenantScopedRepository[KbArticle]):
         article.updated_at = datetime.now(UTC)
         self.db.commit()
         self.db.refresh(article)
-        return self._with_tags(article)
+        return self._with_author_names([self._with_tags(article)])[0]
 
     def list_versions(self, article_id: int) -> list[dict]:
         article = super().get_or_none(article_id)
@@ -263,4 +275,4 @@ class KbRepository(TenantScopedRepository[KbArticle]):
                 "change_note": v.change_note,
                 "created_at": v.created_at,
             })
-        return result
+        return self._with_author_names(result)

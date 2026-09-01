@@ -53,6 +53,20 @@ class PiiRedactionError(ValueError):
     pass
 
 
+def mask_email(email: str | None) -> str | None:
+    """Enmascara un email para display (no lo redacta ni lo persiste).
+
+    Conserva los primeros 2 caracteres del local-part y el dominio, suficiente
+    para distinguir la dirección sin exponer datos personales. P. ej.
+    `juana@acme.com` → `ju***@acme.com`.
+    """
+    if not email or "@" not in email:
+        return None
+    local, domain = email.rsplit("@", 1)
+    prefix = local[:2] if len(local) >= 2 else local
+    return f"{prefix}***@{domain}"
+
+
 @dataclass
 class PIIReport:
     types: dict[str, int] = field(default_factory=dict)

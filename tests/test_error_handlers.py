@@ -6,7 +6,7 @@ from tests.conftest import register_login
 def test_validation_error_in_spanish(client) -> None:
     response = client.post(
         "/auth/register",
-        json={"email": "no-es-un-email", "password": "corta", "role": "hacker"},
+        json={"name": "Test Usuario", "email": "no-es-un-email", "password": "corta", "role": "hacker"},
     )
     assert response.status_code == 422
     detail = response.json()["detail"]
@@ -42,4 +42,4 @@ def test_custom_validator_message_in_spanish(client) -> None:
         headers={"Authorization": f"Bearer {tokens['access_token']}"},
     )
     assert response.status_code == 422
-    assert any("Debe indicar role o is_active" in str(e["msg"]) for e in response.json()["detail"])
+    assert any("Debe indicar role, is_active o name" in str(e["msg"]) for e in response.json()["detail"])

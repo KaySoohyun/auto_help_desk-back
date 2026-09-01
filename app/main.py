@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app import __version__
 from app.api.routes_admin import router as admin_router
+from app.api.routes_agents import router as agents_router
 from app.api.routes_ai import router as ai_router
 from app.api.routes_audit import router as audit_router
 from app.api.routes_auth import router as auth_router
@@ -34,6 +35,7 @@ app.include_router(ai_router)
 app.include_router(workspace_router)
 app.include_router(kb_router)
 app.include_router(tags_router)
+app.include_router(agents_router)
 app.include_router(customers_router)
 app.include_router(persona_router)
 app.include_router(tenants_router)

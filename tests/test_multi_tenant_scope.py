@@ -24,6 +24,7 @@ def _register(client: TestClient, email: str, tenant_ids: list[str]) -> None:
     resp = client.post(
         "/auth/register",
         json={
+            "name": "Test Usuario",
             "email": email,
             "password": "segura-123",
             "role": "agent",
@@ -40,6 +41,7 @@ def test_register_with_multiple_tenants_creates_memberships(client: TestClient) 
     resp = client.post(
         "/auth/register",
         json={
+            "name": "Test Usuario",
             "email": "multi@example.com",
             "password": "segura-123",
             "role": "agent",
@@ -61,6 +63,7 @@ def test_register_single_tenant_sets_primary(client: TestClient) -> None:
     resp = client.post(
         "/auth/register",
         json={
+            "name": "Test Usuario",
             "email": "single@example.com",
             "password": "segura-123",
             "role": "agent",
@@ -77,6 +80,7 @@ def test_register_rejects_unknown_tenant(client: TestClient) -> None:
     resp = client.post(
         "/auth/register",
         json={
+            "name": "Test Usuario",
             "email": "ghost@example.com",
             "password": "segura-123",
             "role": "agent",
@@ -131,6 +135,7 @@ def _register_and_login(client: TestClient, email: str, tenant_id: str) -> dict:
     client.post(
         "/auth/register",
         json={
+            "name": "Test Usuario",
             "email": email,
             "password": "segura-123",
             "role": "agent",

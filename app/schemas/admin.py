@@ -3,10 +3,12 @@ from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.models.user import UserRole
+from app.schemas.auth import UserOut
 
 
 class UserCreate(BaseModel):
     email: EmailStr
+    name: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=8, max_length=128)
     role: UserRole
     tenant_id: str | None = None
@@ -15,12 +17,39 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     role: UserRole | None = None
     is_active: bool | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=255)
 
     @model_validator(mode="after")
     def _at_least_one(self) -> "UserUpdate":
-        if self.role is None and self.is_active is None:
-            raise ValueError("Debe indicar role o is_active")
+        if self.role is None and self.is_active is None and self.name is None:
+            raise ValueError("Debe indicar role, is_active o name")
         return self
+
+
+class UserListOut(BaseModel):
+    items: list[UserOut]
+    total: int
+    limit: int
+    offset: int
+
+
+class CustomerAdminOut(BaseModel):
+    """Cliente visible en la consola de administración (sin PII: email enmascarado)."""
+
+    id: int
+    tenant_id: str
+    name: str
+    email_masked: str | None
+    company: str | None
+    plan: str | None
+    created_at: datetime
+
+
+class CustomerListOut(BaseModel):
+    items: list[CustomerAdminOut]
+    total: int
+    limit: int
+    offset: int
 
 
 class TenantPolicyIn(BaseModel):
