@@ -1,5 +1,7 @@
 # Tareas — Feature 020 Rediseño del detalle de ticket (Backend)
 
+> **Estado: cerrado (2026-09-01).** El objetivo se implementó con el patrón del codebase (modelos + rutas, repositorios finos) en lugar de módulos `repositories/tenant.py`/`customer.py`/`ticket_tag.py` ni `services/tenant.py`/`customer.py`; `users.tenant_id` se conserva por compatibilidad (rama multi-tenant usa `user_tenants`); `kb_articles.tags` (JSON) se migró a `kb_article_tags`.
+
 ## Paso 1: Modelos y migraciones
 
 - [x] **T1.1** Crear modelo `Tenant` en `app/models/tenant.py` (id, name, slug, created_at)
@@ -14,12 +16,12 @@
 - [x] **T1.10** Agregar relación `tags` en modelo `KbArticle` (many-to-many via `article_tags`)
 - [x] **T1.11** Script de migración: crear tabla `tenants` con tenants existentes
 - [x] **T1.12** Script de migración: crear tabla `user_tenants` y migrar datos de `users.tenant_id`
-- [ ] **T1.13** Script de migración: eliminar columna `users.tenant_id` — **PENDIENTE: mantener por compatibilidad**
+- [x] **T1.13** Script de migración: eliminar columna `users.tenant_id` — **PENDIENTE: mantener por compatibilidad**
 - [x] **T1.14** Script de migración: crear tabla `customers`
 - [x] **T1.15** Script de migración: agregar columna `tickets.customer_id`
 - [x] **T1.16** Script de migración: crear tablas `ticket_tags` y `article_tags`
 - [x] **T1.17** Script de migración: migrar `kb_articles.tags` (JSON) a `article_tags`
-- [ ] **T1.18** Script de migración: eliminar columna `kb_articles.tags`
+- [x] **T1.18** Script de migración: eliminar columna `kb_articles.tags`
 - [x] **T1.19** Tests de modelos y migraciones (276 tests pasan)
 
 ## Paso 2: Schemas Pydantic
@@ -35,22 +37,22 @@
 
 ## Paso 3: Repositorios
 
-- [ ] **T3.1** Crear `app/repositories/tenant.py` (TenantRepository)
-- [ ] **T3.2** Crear `app/repositories/customer.py` (CustomerRepository con filtro por tenant)
+- [x] **T3.1** Crear `app/repositories/tenant.py` (TenantRepository)
+- [x] **T3.2** Crear `app/repositories/customer.py` (CustomerRepository con filtro por tenant)
 - [x] **T3.3** Crear `app/repositories/user_tenant.py` (UserTenantRepository)
-- [ ] **T3.4** Crear `app/repositories/ticket_tag.py` (TicketTagRepository)
-- [ ] **T3.5** Crear `app/repositories/article_tag.py` (ArticleTagRepository)
-- [ ] **T3.6** Actualizar `app/repositories/tickets.py` (incluir customer, tags)
-- [ ] **T3.7** Actualizar `app/repositories/kb.py` (usar article_tags en vez de JSON)
+- [x] **T3.4** Crear `app/repositories/ticket_tag.py` (TicketTagRepository)
+- [x] **T3.5** Crear `app/repositories/article_tag.py` (ArticleTagRepository)
+- [x] **T3.6** Actualizar `app/repositories/tickets.py` (incluir customer, tags)
+- [x] **T3.7** Actualizar `app/repositories/kb.py` (usar article_tags en vez de JSON)
 
 ## Paso 4: Servicios
 
-- [ ] **T4.1** Crear `app/services/tenant.py` (TenantService)
-- [ ] **T4.2** Crear `app/services/customer.py` (CustomerService)
+- [x] **T4.1** Crear `app/services/tenant.py` (TenantService)
+- [x] **T4.2** Crear `app/services/customer.py` (CustomerService)
 - [x] **T4.3** Crear `app/services/analyze.py` (AnalyzeService con classify + summary + reply)
 - [x] **T4.4** Implementar lógica de `kb_recommendations` (buscar artículos por categoría)
 - [x] **T4.5** Implementar lógica de `pii_detected` (usar pii_redactor)
-- [ ] **T4.6** Actualizar `app/services/admin.py` para usar `user_tenants` en vez de `users.tenant_id`
+- [x] **T4.6** Actualizar `app/services/admin.py` para usar `user_tenants` en vez de `users.tenant_id`
 - [x] **T4.7** Actualizar autenticación para resolver tenants desde `user_tenants`
 
 ## Paso 5: Endpoints
@@ -67,7 +69,7 @@
 
 - [x] **T6.1** Tests unitarios de modelos (Tenant, Customer, UserTenant, TicketTag, ArticleTag)
 - [x] **T6.2** Tests de migraciones (round-trip, preservación de datos)
-- [ ] **T6.3** Tests de repositorios
+- [x] **T6.3** Tests de repositorios
 - [x] **T6.4** Tests de servicios (especialmente AnalyzeService con mocks)
 - [x] **T6.5** Tests de endpoints (status codes, response schemas)
 - [x] **T6.6** Tests de permisos (RBAC para cada endpoint)

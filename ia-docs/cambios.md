@@ -2,6 +2,14 @@
 
 _Registro de cambios del proyecto. Formato: fecha · descripción · rama._
 
+## 2026-09-01 · Revalidación y cierre de features 005/006/007/009/010
+
+- **005/006 LLM**: el 422 "Campos de ... inválidos" del orquestador en mock ya no ocurre — `classify`/`summary`/`suggested-reply`/`analyze` devuelven 200 con el mock determinista (verificado contra FastAPI local con `demo.agente`).
+- **007 KB**: `/v1/kb/*` (routes_kb.py) validado con `supervisor` — categorías y artículos OK.
+- **009 Auditoría**: `GET /audit/events` devuelve eventos con `supervisor` (`audit:view`).
+- **010 Tenant policy**: `GET /admin/ai-policy` con tenant_admin 200; `global` 403 (correcto).
+- Roadmap y `features/*/tasks.md` actualizados (019/020/023 marcados; entrada **024 · Base de conocimiento** agregada a Hecho).
+
 ## 2026-09-01 · Paginación server-side en admin (usuarios y clientes)
 
 - **`GET /admin/users`** → `UserListOut {items, total, limit, offset}`; nuevos filtros `q` (nombre o email `ilike`) y `role`. Se excluye `customer`.
