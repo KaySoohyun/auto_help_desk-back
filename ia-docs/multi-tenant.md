@@ -162,14 +162,8 @@ python scripts/migrate_user_tenants.py
 
 **Resultado esperado**:
 ```
-Iniciando migración de users.tenant_id a user_tenants...
-Tabla user_tenants verificada/creada.
-Verificando tenants faltantes...
-Tenants faltantes creados.
-Encontrados 190 usuarios con tenant_id para migrar.
-Migración completada. 190 registros en user_tenants.
-Todos los usuarios fueron migrados correctamente.
-Migración completada.
+> _Ejemplo del script `scripts/migrate_user_tenants.py`. Los números (190)
+> dependen del estado de la base de datos en cada corrida; son ilustrativos._
 ```
 
 ## Compatibilidad
@@ -178,9 +172,11 @@ Migración completada.
 
 El sistema mantiene compatibilidad con código que usa `users.tenant_id`:
 
-- `User.tenant_id` sigue existiendo y se usa como tenant principal
-- Los endpoints que no especifican `tenant_id` usan `users.tenant_id`
-- Los tokens JWT incluyen `tenant_id` del tenant activo
+- `User.tenant_id` sigue existiendo y se usa como tenant principal (legacy)
+- La resolución real de alcance (`get_effective_tenant_ids`) usa **membresías `user_tenants` primero**:
+  - Si el JWT trae `tenant_id` (un único tenant activo seleccionado) se usa ese tenant.
+  - Si no trae `tenant_id` (el usuario salteó la selección o usó `POST /auth/clear-tenant`) se usan **todos** sus tenants via `user_tenants`, con fallback a `users.tenant_id` solo para usuarios migrados sin membresías.
+- Los tokens JWT incluyen `tenant_id` del tenant activo (o ninguno si opera sobre todos).
 
 ### Próximos Pasos
 
@@ -221,7 +217,11 @@ source .venv/bin/activate
 pytest tests/ -v
 ```
 
-**Resultado esperado**: 276 tests pasan
+**Referencias útiles**:
+- `tests/test_multi_tenant_scope.py` y `tests/test_tenant_isolation.py` — aislamiento y alcance por tenant.
+- `tests/test_permissions.py` — RBAC y permisos por rol.
+
+> El total de tests crece con cada feature; el estado vigente está en `constitution/roadmap.md`.
 
 ## Frontend
 

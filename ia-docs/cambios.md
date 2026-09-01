@@ -2,6 +2,12 @@
 
 _Registro de cambios del proyecto. Formato: fecha · descripción · rama._
 
+## 2026-09-01 · Sincronización de docs con el código real (ia-docs)
+
+- `post-code/api.md` reescrito: register público con `customer`/`name`, login `tenant_id`, switch-tenant/tenants/clear-tenant, excepciones de auth (tenants/public, refresh/logout por body), roles con permisos KB + `customer`, `q` en listados, categorías y tags de tickets, analyze, enriquecimiento `assignee`/`author_name`/`customer_id`, admin `{items,total,limit,offset}` + `/admin/customers` con email enmascarado, secciones KB/agents/customers/persona/tenants/tags.
+- `post-code/models.md`: `users.name`, rol `customer`, `tickets.customer_id`, tablas `tenants`/`user_tenants`/`customers`/`tags`/`ticket_tags`/`kb_*`; output de clasificación `{category, suggested_priority}`.
+- `spec.md`, `constitution/tech-stack.md`, `multi-tenant.md`, `architecture/*`: JWT HS256 propio (OIDC diferido ADR-005), fuera "Servicio IA", sin subcategory/intent/rationale ni `knowledgeBaseIds`; comandos y paths `ia-docs/`.
+
 ## 2026-09-01 · Revalidación y cierre de features 005/006/007/009/010
 
 - **005/006 LLM**: el 422 "Campos de ... inválidos" del orquestador en mock ya no ocurre — `classify`/`summary`/`suggested-reply`/`analyze` devuelven 200 con el mock determinista (verificado contra FastAPI local con `demo.agente`).

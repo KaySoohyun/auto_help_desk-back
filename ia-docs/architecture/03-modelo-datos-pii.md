@@ -122,7 +122,7 @@ Clasificación: **CRÍTICA** (requiere redacción/tokenización antes de LLM), *
 ## 3. Restricciones de integridad y reglas
 
 - **filtro tenant obligatorio**: cada tabla que referencia a tenant requiere `WHERE tenant_id = :current` aplicado vía repositorio central (no el call site) (ADR-001). Se planifica RLS.
-- **suggestion.state** ∈ `pending | accepted | edited | rejected | flagged`.
+- **suggestion.state** ∈ `draft | accepted | edited | rejected | flagged`.
 - Un `feedback` sólo se puede registrar contra una sugerencia del mismo tenant.
 - `audit_event.created_at` siempre UTC; no se altera posteriormente (inmutabilidad de auditoría).
 

@@ -1,6 +1,6 @@
 # 02 · Arquitectura cloud multi-tenant
 
-> Trazable a `spec.md` §3, §14 y §16. Sistema: Python/FastAPI, SQLAlchemy 2.x, JWT/OAuth, orquestador LLM con guardrails. Ver contrato en ADR-001.
+> Trazable a `spec.md` §3, §14 y §16. Sistema: Python/FastAPI, SQLAlchemy 2.x, JWT HS256 propio (PyJWT; OIDC diferido, ADR-005), orquestador LLM con guardrails. Ver contrato en ADR-001.
 
 ## 1. Principios rectores
 
@@ -21,7 +21,7 @@ flowchart LR
 
     subgraph Edge["Borde"]
         GW["API Gateway / LB"]
-        OIDC[Proveedor OIDC/OAuth]
+        IDP[JWT HS256 propio (PyJWT)]
     end
 
     subgraph App["Backend (FastAPI)"]
@@ -51,7 +51,7 @@ flowchart LR
 
 **Flujo principal (sugerencia de respuesta):**
 ```
-UI Agente → Gateway → JWT/OAuth validado
+UI Agente → Gateway → JWT HS256 validado
   → Backend: tenant_id validado + RBAC
   → Tickets: leer ticket + historial (contexto mínimo)
   → Redacción PII → contexto seguro (tokens)
@@ -68,7 +68,7 @@ UI Agente → Gateway → JWT/OAuth validado
 | Componente | Función | Notas |
 |---|---|---|
 | API Gateway | TLS, rate limit, rutas | Protege backend |
-| OIDC/OAuth | Emisión/validación de JWT | usuarios humanos |
+| JWT HS256 propio | Emisión/validación de JWT (PyJWT); OIDC diferido | usuarios humanos |
 | Autenticación JWT | validación token (exp, iss, aud) | §10.1 |
 | Autorización | filtro tenant + RBAC | obligatorio siempre |
 | Redacción de PII | detectar y tokenizar | §9.3, nunca datos crudos |

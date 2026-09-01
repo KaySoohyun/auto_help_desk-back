@@ -18,7 +18,7 @@ Es el cimiento de toda la seguridad del spec (§10.1, RS-01). Sin identidad conf
 
 ## Criterios de aceptación
 
-- [x] `POST /auth/register` permite crear un usuario (con validación de email) solo por admin de plataforma.
+- [x] `POST /auth/register` permite crear un usuario (con validación de email). Desde la feature 020 el registro es **público** (roles `agent|supervisor|customer`), reemplazando la restricción original de "solo admin de plataforma"; la creación admin va por `POST /admin/users`.
 - [x] `POST /auth/login` autentica con email+contraseña y devuelve `access_token` + `refresh_token`.
 - [x] El access token contiene claims mínimos: `sub`, `exp`, `iss`, `aud`, `tenant_id`, `roles`.
 - [x] El access token se valida por firma (HS256), expiración, issuer y audiencia en cada request protegido.

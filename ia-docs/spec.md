@@ -235,7 +235,7 @@ Antes de enviar contenido al LLM:
 # 10. Seguridad, identidad y autorización
 
 ## 10.1 Autenticación
-- Usuarios humanos autenticados vía OIDC / OAuth 2.0.
+- Usuarios humanos autenticados por email+contraseña contra JWT HS256 de emisión propia (PyJWT); OIDC/OAuth 2.0 diferido (ADR-005).
 - Backend debe validar JWT en cada request.
 - Tokens deben incluir expiración, issuer, audiencia y claims mínimos.
 - Service-to-service communication debe usar OAuth client credentials o mecanismo equivalente.
@@ -247,21 +247,12 @@ Antes de enviar contenido al LLM:
 - Se recomienda row-level security o política equivalente.
 
 ## 10.3 RBAC
-Roles mínimos:
-- Agente.
-- Supervisor.
-- Admin de tenant.
-- Admin de plataforma.
-- Servicio IA.
-
-Permisos clave:
-- Leer tickets.
-- Solicitar sugerencias IA.
-- Editar respuestas.
-- Enviar respuestas.
-- Configurar tenant.
-- Ver auditoría.
-- Gestionar políticas IA.
+Roles implementados (`app/core/permissions.py`):
+- `agent` — tickets:read, ai:suggest, responses:edit, responses:send, kb:read.
+- `supervisor` — + audit:view, kb:edit, kb:publish.
+- `tenant_admin` — + tenant:configure.
+- `platform_admin` — + ai_policies:manage.
+- `customer` — persona:tickets (portal de personas).
 
 ## 10.4 Secretos y claves
 - API keys de LLM no deben vivir en frontend.
@@ -438,13 +429,10 @@ Entrada:
 - locale
 - userId
 
-Salida:
+Salida (implementada):
 - category
-- subcategory
-- intent
 - suggestedPriority
 - confidence
-- rationale
 - warnings
 - traceId
 
@@ -466,13 +454,9 @@ Salida:
 ## 15.3 Respuesta sugerida
 `POST /v1/ai/tickets/{ticketId}/suggested-reply`
 
-Entrada:
-- tenantId
-- ticketId
-- userId
-- tone
-- language
-- knowledgeBaseIds
+Entrada (implementada):
+- tone (opcional)
+- language (opcional)
 
 Salida:
 - suggestedReply

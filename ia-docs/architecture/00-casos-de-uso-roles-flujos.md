@@ -14,7 +14,7 @@
 
 | ID | Actor | Meta | Disparador | Resultado esperado |
 |---|---|---|---|---|
-| CU-01 | Sistema (task IA) | Clasificar el ticket | Creación o actualización de ticket | Categoría, subcategoría, intención, prioridad sugerida, confianza y rationale |
+| CU-01 | Sistema (task IA) | Clasificar el ticket | Creación o actualización de ticket | Categoría y prioridad sugerida con confianza |
 | CU-02 | Agente de soporte | Entender rápido el caso | Abre un ticket | Resumen con problema principal, datos relevantes, acciones previas, estado e info faltante |
 | CU-03 | Agente de soporte | Redactar respuesta consistente | Solicita respuesta sugerida | Borrador editable con fuentes, confianza y advertencias |
 | CU-04 | Agente de soporte | Decidir sobre la sugerencia | Recibe sugerencia IA | Aceptar, editar, rechazar, regenerar o marcar incorrecta/riesgosa |
@@ -37,7 +37,7 @@
 
 _Matriz derivada de `spec.md` §10.3._
 
-| Capacidad | Agente | Supervisor | Admin tenant | Admin plataforma | Servicio IA |
+| Capacidad | Agente | Supervisor | Admin tenant | Admin plataforma | Customer |
 |---|---|---|---|---|---|
 | Leer tickets | ✅ | ✅ | ✅ | ✅ (auditoría) | Parcial (contexto redactado) |
 | Solicitar clasificación/resumen/respuesta | ✅ | ✅ | — | — | — |
@@ -50,5 +50,5 @@ _Matriz derivada de `spec.md` §10.3._
 
 ## 5. Observaciones
 
-- El **Servicio IA** nunca accede a la API de agente para acciones humanas; sólo consume contexto redactado vía servicio interno.
+- El orquestador de IA consume contexto redactado vía servicio interno; no tiene cuenta de usuario ni accede a la API de agente.
 - La decisión de envío final siempre recae en un humano (FR-04, `spec.md` §8).

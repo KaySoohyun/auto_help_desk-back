@@ -6,7 +6,7 @@
 
 | ID | Descripción | Trazabilidad | Verificación |
 |---|---|---|---|
-| FR-01 | Clasificar tickets con salida estructurada (categoría, subcategoría, intención, prioridad, confianza, motivo) | §8 FR-01 | Esquema válido y persistido |
+| FR-01 | Clasificar tickets con salida estructurada (categoría, prioridad sugerida, confianza) | §8 FR-01 | Esquema válido y persistido |
 | FR-02 | Generar resúmenes breves y accionables sin datos innecesarios | §8 FR-02 | Resumen sin PII innecesaria |
 | FR-03 | Sugerir respuesta profesional, editable por el agente | §8 FR-03 | Borrador editable |
 | FR-04 | Nunca enviar respuesta IA sin aprobación humana | §8 FR-04, §19.1 | Sin envío automático |
@@ -30,7 +30,7 @@
 
 | ID | Descripción | Trazabilidad |
 |---|---|---|
-| RS-01 | Autenticación JWT/OAuth obligatoria; validar expiración, issuer, audience, claims | §10.1 |
+| RS-01 | Autenticación JWT (HS256 propio, PyJWT) obligatoria; validar expiración, issuer, audience, claims; OIDC diferido (ADR-005) | §10.1 |
 | RS-02 | Autorización por tenant en cada request; filtro obligatorio por tenant | §10.2 |
 | RS-03 | RBAC con roles mínimos y permisos clave | §10.3 |
 | RS-04 | Secrets en vault; rotación; no secrets en frontend | §10.4 |

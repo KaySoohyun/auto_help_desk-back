@@ -8,37 +8,42 @@ _Cómo está construido el proyecto y las reglas que todo el código debe respet
 - **Framework / runtime:** FastAPI
 - **Base de datos:** SQLAlchemy 2.x (Pydantic v2 para validación; `DATABASE_URL` configurable, p. ej. SQLite en local, PostgreSQL en producción)
 - **Configuración:** pydantic-settings leyendo variables desde `.env`
-- **Autenticación:** JWT (OIDC / OAuth 2.0) con expiración, issuer, audiencia y claims mínimos; scopes y revocación
+- **Autenticación:** JWT HS256 de emisión propia (PyJWT) con `sub`, `tenant_id` (opcional) y `roles`; refresh rotativo y revocación. OIDC/OAuth 2.0 diferido (ADR-005)
 - **Arquitectura:** cloud multi-tenant (landing zone y entornos base aprovisionados como código — Fase 2 del plan de ejecución)
-- **Integración IA:** orquestador LLM con gateway de timeouts, reintentos, fallback y límites de uso; plantillas de prompt versionadas
-- **Tests:** por definir en `AGENTS.md` (`Comandos` está pendiente)
-- **Despliegue:** CI/CD con rollout por tenants, feature flags y rollback (Fase 6 del plan de ejecución)
+- **Integración IA:** orquestador LLM con gateway de timeouts, reintentos, fallback, rate limit por tenant+usuario y plantillas de prompt versionadas; proveedor mock determinista y HTTP (OpenAI-compatible)
+- **Tests:** suite `pytest` en `tests/` (ver `AGENTS.md`)
+- **Despliegue:** CI/CD en `.github/workflows/ci.yml` (tests, compileall, chequeo de secretos, smoke `/health`, release con gate) + `scripts/release.sh` (tag `vX.Y.Z`)
 
 ## Archivos / módulos clave
 
 _Mapa breve de dónde vive cada cosa. Solo lo que un recién llegado necesita para orientarse._
 
-- `ia_docs/spec.md` — especificación funcional completa del producto.
-- `ia_docs/plan-ejecucion.md` — plan de ejecución en 6 fases con épicas y entregables.
-- `ia_docs/constitution/` — misión, roadmap y tech stack (la constitución manda).
-- `ia_docs/features/` — specs de features (cada una con `spec.md`, `plan.md` y `tasks.md`).
-- `ia_docs/cambios.md` — registro de todos los cambios del proyecto.
+- `ia-docs/spec.md` — especificación funcional completa del producto.
+- `ia-docs/plan-ejecucion.md` — plan de ejecución en 6 fases con épicas y entregables.
+- `ia-docs/constitution/` — misión, roadmap y tech stack (la constitución manda).
+- `ia-docs/features/` — specs de features (cada una con `spec.md`, `plan.md` y `tasks.md`).
+- `ia-docs/architecture/` — ADRs y documentos de arquitectura.
+- `ia-docs/post-code/models.md` y `post-code/api.md` — modelo de datos y referencia de API.
+- `ia-docs/cambios.md` — registro de todos los cambios del proyecto.
+- `app/api/` — routers (auth, tickets, workspace, admin, ai, kb, tags, agents, customers, persona, tenants, audit, pii, metrics).
+- `app/models/` — modelos SQLAlchemy.
+- `app/schemas/` — schemas Pydantic v2.
 - `.env` / `.env.example` — configuración de secretos y conexión (`.env` no se sube al repo).
 
 ## Comandos
 
-- `<comando dev>` — pendiente de definir.
-- `<comando test>` — pendiente de definir.
-- `<comando lint>` — pendiente de definir.
-- `<comando build>` — no aplica (aplicación interpretada).
+- Dev: `.venv/bin/uvicorn app.main:app --reload` (requiere `.env`; DB por `DATABASE_URL`)
+- Tests: `.venv/bin/python -m pytest -q`
+- Chequeo de sintaxis: `.venv/bin/python -m compileall -q app tests scripts`
+- Chequeo de secretos: `bash scripts/check_secrets.sh`
+- Release (crea tag `vX.Y.Z`): `bash scripts/release.sh [--push]`
+- Health check: `curl -s localhost:8000/health`
 
 ## Modelo de datos / dominio
 
-_Documenta solo lo no obvio: invariantes, mecánicas especiales, qué campo controla qué. Se detallará con el modelo de datos en Fase 1/3 del plan de ejecución._
-
 - **Tenant** — unidad de aislamiento; toda consulta y escritura debe filtrarse obligatoriamente por tenant.
-- **Usuario** — identidad autenticada vía JWT/OAuth con rol (agente, supervisor, admin de tenant, admin de plataforma, servicio IA).
-- **Ticket** — entidad central gestionada; debe conservar asunto, descripción, historial, estado, categoría, prioridad y metadatos mínimos.
+- **Usuario** — identidad autenticada vía JWT con rol (`agent`, `supervisor`, `tenant_admin`, `platform_admin`, `customer`); pertenece a uno o más tenants vía `user_tenants`.
+- **Ticket** — entidad central gestionada; asunto, descripción (cifrados), historial, estado (`open|in_progress|on_hold|closed`), categoría, prioridad y customer opcional.
 - **Sugerencia IA** — clasificación/resumen/respuesta con versión de modelo y prompt, confianza, fuentes, warnings y estado final (aceptada/editada/rechazada).
 - **Evento de auditoría** — timestamp UTC, tenant, user/service, ticket, acción, modelo, versión de prompt, trace ID, resultado y confianza.
 

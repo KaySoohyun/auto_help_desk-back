@@ -6,7 +6,7 @@
 
 | Prioridad | Fase | Contenido resumido | Por qué ahora |
 |---|---|---|---|
-| P0 | Fase 2 | Autenticación JWT/OAuth, autorización por tenant + RBAC, cifrado/secretos, auditoría | Sin identidad y aislamiento no puede construirse nada sobre datos |
+| P0 | Fase 2 | Autenticación JWT HS256 propio, autorización por tenant + RBAC, cifrado/secretos, auditoría | Sin identidad y aislamiento no puede construirse nada sobre datos |
 | P0 | Fase 3 | API core de tickets, persistencia multi-tenant, redacción PII, optimización de consultas, observabilidad | El núcleo de datos y su aislamiento son la base del producto |
 | P1 | Fase 4 | Orquestador LLM, clasificación, resumen, sugerencia, guardrails, suite de evaluación | El valor IA llega después de que existan tickets y redacción |
 | P1 | Fase 5 | Workspace de agente, panel IA, admin de tenant, auditoría | Sin la UX no se puede operar el valor IA |
@@ -18,7 +18,7 @@
 | ID | Entregable | Requisito base |
 |---|---|---|
 | 2.1 | Infraestructura base / landing zone | §10 |
-| 2.2 | Autenticación JWT/OAuth (ADR-005) | §10.1 |
+| 2.2 | Autenticación JWT (ADR-005) | §10.1 |
 | 2.3 | Autorización por tenant y RBAC (ADR-001) | §10.2, §10.3 |
 | 2.4 | Cifrado en tránsito y reposo, secretos en vault | §10.4, §10.5 |
 | 2.5 | Auditoría, logging y trazabilidad | §11 |

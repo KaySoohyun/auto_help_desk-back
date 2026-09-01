@@ -13,11 +13,60 @@ Usuarios del sistema.
 | --- | --- | --- | --- |
 | `id` | int | PK | |
 | `email` | string(255) | unique, index | |
+| `name` | string(255) | nullable | Nombre de display (`migrate_users_name.py` lo backfillea desde el email) |
 | `password_hash` | string(255) | | Hash Argon2; nunca se expone |
-| `role` | string(50) | | `platform_admin` \| `tenant_admin` \| `supervisor` \| `agent` |
-| `tenant_id` | string(64) | nullable, index | `null` para admins multi-tenant |
+| `role` | string(50) | | `platform_admin` \| `tenant_admin` \| `supervisor` \| `agent` \| `customer` |
+| `tenant_id` | string(64) | nullable, index | Legacy (un solo tenant); la membresía real es vía `user_tenants` |
 | `is_active` | bool | default `true` | Si es `false`, no puede autenticarse |
 | `created_at` | datetime (tz) | default now(UTC) | |
+
+---
+
+## `tenants`
+
+Empresas multi-tenant.
+
+| Columna | Tipo | Restricciones | Notas |
+| --- | --- | --- | --- |
+| `id` | string(64) | PK | |
+| `name` | string(100) | | |
+| `slug` | string(100) | unique, index | Primer segmento de la URL (`/[slug]/...`) |
+| `created_at` | datetime (tz) | default now(UTC) | |
+
+---
+
+## `user_tenants`
+
+Membresía many-to-many usuario ↔ tenant (rollo por tenant, feature 019). El `users.tenant_id` legacy se mantiene por compatibilidad.
+
+| Columna | Tipo | Restricciones | Notas |
+| --- | --- | --- | --- |
+| `id` | int | PK | |
+| `user_id` | int | FK `users.id` (CASCADE), index | |
+| `tenant_id` | string(64) | FK `tenants.id` (CASCADE), index | |
+| `role` | string(50) | | Rol del usuario en **este** tenant |
+| `created_at` | datetime (tz) | default now(UTC) | |
+
+Índice único compuesto: `(user_id, tenant_id)`.
+
+---
+
+## `customers`
+
+Clientes del portal de personas (una fila por persona, vinculada a `users.id`).
+
+| Columna | Tipo | Restricciones | Notas |
+| --- | --- | --- | --- |
+| `id` | int | PK | |
+| `tenant_id` | string(64) | FK `tenants.id`, index | |
+| `name` | string(200) | | |
+| `email` | string(255) | nullable, index | Considerado PII; en la consola admin se muestra enmascarado |
+| `company` | string(200) | nullable | |
+| `plan` | string(50) | nullable | |
+| `user_id` | int | FK `users.id`, nullable, unique, index | Cuenta de portal vinculada |
+| `created_at` | datetime (tz) | default now(UTC) | |
+
+Índice compuesto: `(tenant_id, email)`.
 
 ---
 
@@ -29,11 +78,11 @@ Tickets de soporte por tenant.
 | --- | --- | --- | --- |
 | `id` | int | PK | |
 | `tenant_id` | string(64) | index | Filtro de aislamiento por tenant |
+| `customer_id` | int | FK `customers.id`, nullable, index | Cliente del portal que originó el ticket |
 | `subject` | text | **cifrado** | |
 | `description` | text | **cifrado**, carga diferida | No se incluye en listados |
 | `category` | string(100) | nullable, index | |
 | `priority` | string(20) | nullable, index | `low` \| `medium` \| `high` \| `urgent` |
-| `language` | string(10) | default `"es"` | |
 | `status` | string(20) | index, default `"open"` | `open` \| `in_progress` \| `on_hold` \| `closed` |
 | `assignee_id` | int | FK `users.id`, nullable, index | |
 | `created_at` | datetime (tz) | default now(UTC) | |
@@ -97,9 +146,11 @@ Sugerencias de IA por ticket. Una sola tabla para todos los tipos.
 Índice compuesto: `(tenant_id, ticket_id)`.
 
 Contenido de `output` por tipo:
-- `classification`: `{ category, subcategory, intent, suggested_priority, rationale }`
+- `classification`: `{ category, suggested_priority }`
 - `summary`: `{ summary, missing_information }`
 - `reply`: `{ suggested_reply, sources, policy_flags }`
+
+La columna `output` de la sugerencia puede actualizarse con el `edited_output` del feedback (`accepted`/`edited`).
 
 ---
 
@@ -183,17 +234,65 @@ Los valores efectivos que consume la API se calculan en runtime: override de `Gl
 
 ---
 
+## `tags` / `ticket_tags`
+
+Tags por tenant y su asociación many-to-many con tickets (feature 017/023).
+
+**`tags`**
+| Columna | Tipo | Restricciones | Notas |
+| --- | --- | --- | --- |
+| `id` | int | PK | |
+| `tenant_id` | string(64) | FK `tenants.id`, index | |
+| `name` | string(50) | index | |
+| `created_at` | datetime (tz) | default now(UTC) | |
+
+Índice único compuesto: `(tenant_id, name)`.
+
+**`ticket_tags`** — `id` PK; `ticket_id` FK `tickets.id` (CASCADE); `tag_id` FK `tags.id` (CASCADE). Índice único `(ticket_id, tag_id)`.
+
+---
+
+## Knowledge Base — `kb_*`
+
+Artículos de base de conocimiento por tenant, versionado y tags relacionales.
+
+**`kb_articles`**
+| Columna | Tipo | Restricciones | Notas |
+| --- | --- | --- | --- |
+| `id` | int | PK | |
+| `tenant_id` | string(64) | index | |
+| `title` | string(200) | | |
+| `body` | text | | |
+| `category` | string(100) | nullable, index | |
+| `status` | string(20) | default `"draft"`, index | `draft` \| `published` \| `archived` |
+| `author_id` | int | FK `users.id` | |
+| `current_version` | int | default `1` | |
+| `created_at` / `updated_at` | datetime (tz) | defaults | |
+| `published_at` | datetime (tz) | nullable | |
+
+**`kb_article_versions`** — snapshot de cada edición (`article_id`, `version`, `title`, `body`, `category`, `author_id`, `change_note`, `created_at`).
+
+**`kb_article_tags`** — `article_id` FK `kb_articles.id` (CASCADE), `tag_id` FK `tags.id` (CASCADE); índice único `(article_id, tag_id)`.
+
+**`kb_categories`** — categorías gestionables por tenant (`id`, `tenant_id` FK, `name`, `created_at`); índice único `(tenant_id, name)`.
+
+---
+
 ## Relaciones
 
 ```
-User 1──N RefreshToken
-User 1──N TicketMessage (author)
-User 1──N Ticket (assignee)
+Tenant 1──N Ticket | 1──N Customer | 1──N KbArticle | 1──N KbCategory | 1──N Tag
+User 1──N RefreshToken | 1──N TicketMessage (author) | 1──N Ticket (assignee)
+User N──N Tenant  (vía UserTenant: user_id, tenant_id, role)
+User 1──1 Customer (customer del portal; customers.user_id)
+Customer 1──N Ticket (tickets.customer_id)
 
 Tenant (1) ──N Ticket
 Ticket 1──N TicketMessage
 Ticket 1──N AISuggestion
 AISuggestion 1──1 Feedback
+Ticket N──N Tag (vía ticket_tags)
+KbArticle N──N Tag (vía kb_article_tags)
 
 User 1──N AuditEvent
 TenantPolicy (1 por tenant)
